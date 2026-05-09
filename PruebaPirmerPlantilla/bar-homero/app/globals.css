@@ -1,0 +1,53 @@
+@import "tailwindcss";
+
+@theme {
+  /* Brand colors — Bar Homero */
+  --color-brand-primary: #3E4B2A;
+  --color-brand-secondary: #D4A648;
+  --color-brand-accent: #C5572D;
+
+  /* Escala de neutros cálidos */
+  --color-neutral-50: #FAF9F5;
+  --color-neutral-100: #F2EFE5;
+  --color-neutral-200: #E4DECE;
+  --color-neutral-300: #C8C0A8;
+  --color-neutral-500: #8C8470;
+  --color-neutral-600: #6A6255;
+  --color-neutral-700: #4E4638;
+  --color-neutral-800: #312B20;
+  --color-neutral-900: #1C1A13;
+}
+
+@theme inline {
+  --font-display: var(--font-lora);
+  --font-body: var(--font-figtree);
+}
+
+/* Marca visual: rombo de acento ◆ como decorador */
+@keyframes fadeSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Marquee infinito */
+@keyframes marqueeSlide {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+@layer utilities {
+  /* Eyebrow con rombo decorativo */
+  .eyebrow-decorated::before {
+    content: "◆ ";
+    color: var(--color-brand-accent);
+    font-size: 0.6em;
+    vertical-align: middle;
+    margin-right: 0.25rem;
+  }
+}

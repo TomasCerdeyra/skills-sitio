@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell([System.Guid]::NewGuid\\(\\).ToString\\(\\))",
+      "Bash(npm install *)",
+      "Bash(npm run *)",
+      "Bash(python3 -c \"import sys,json;d=json.load\\(sys.stdin\\);print\\(json.dumps\\({k:d[k] for k in ['dependencies','devDependencies'] if k in d}, indent=2\\)\\)\")",
+      "WebFetch(domain:images.unsplash.com)",
+      "Bash(grep -rn \"TODO: skill sitio-diseno\" app/ components/)",
+      "Bash(grep -rn \"{COMPLETAR\" app/ components/)",
+      "Bash(grep -rn \"Lorem ipsum\" app/ components/)",
+      "PowerShell(node -e \"console.log\\(require\\('crypto'\\).randomUUID\\(\\)\\)\")",
+      "Bash(npm show *)",
+      "Bash(npx create-next-app@latest gym-terra --typescript --tailwind --app --src-dir=false --import-alias=\"@/*\" --no-eslint --yes)",
+      "Bash(mkdir *)"
+    ]
+  }
+}
