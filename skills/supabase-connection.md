@@ -54,14 +54,23 @@ NEXT_PUBLIC_TENANT_ID=
 
 **`orders`** — Emprendimiento y Empresa
 - Identificación: `id`, `tenant_id`, `external_reference`, `tracking_token` (unique), `created_at`, `updated_at`.
-- Estado: `status` (`created`|`pending`|`approved`|`cancelled`|`rejected`), `payment_status`, `payment_provider` (default `mercadopago`), `mp_payment_id`, `total`, `currency` (default `ARS`).
+- Estado: `status` (`pending`|`confirmed`|`preparing`|`shipped`|`delivered`|`cancelled`), `payment_status`, `payment_provider` (default `mercadopago`), `mp_payment_id`, `total`, `currency` (default `ARS`).
 - Comprador: `customer_first_name`, `customer_last_name`, `customer_phone`, `payer_email`, `notes`.
-- Envío (popular **siempre las columnas individuales** + JSONB): `shipping_carrier`, `shipping_service`, `shipping_cost`, `shipping_postal_code`, `shipping_address` (JSONB con `{street, city, state, postal_code, notes?}`), `shipping_label_url` (solo Envia), `shipping_tracking_number`.
+- Envío: `shipping_carrier`, `shipping_service`, `shipping_cost`, `shipping_postal_code`, `shipping_address` (JSONB), `shipping_label_url` (solo Envia), `shipping_tracking_number`.
 - Cupón: `coupon_code`, `discount_amount`.
 
 **`order_items`** — `id`, `tenant_id`, `order_id` → `orders` (cascade), `product_id` → `products`, `variant_id` → `product_variants`, `name`, `variant_name`, `quantity`, `unit_price`.
 
 **`coupons`** — `id`, `tenant_id`, `code`, `type` (`percent`|`fixed`), `value`, `min_amount`, `max_uses`, `uses_count`, `starts_at`, `expires_at`, `active`.
+
+**`contact_messages`** — formulario de contacto
+`id`, `tenant_id`, `name`, `email`, `phone`, `message`, `source` (default `contact_form`), `status` (`new`|`read`|`archived`), `created_at`.
+
+**`order_events`** — historial de cambios de estado de pedidos
+`id`, `tenant_id`, `order_id` → `orders`, `type`, `payload` (JSONB), `created_at`.
+
+**`payment_events`** — eventos de pago de proveedores
+`id`, `tenant_id`, `order_id` → `orders`, `provider` (default `mercadopago`), `provider_event_id`, `status`, `payload` (JSONB), `created_at`.
 
 ---
 
@@ -111,41 +120,20 @@ Después del schema, seguir con `supabase-storage` (bucket) y `rls-on-demand` (p
 
 ## Insertar tenant inicial
 
-```sql
--- Plan Esencial
-INSERT INTO public.tenants (id, name, slug, plan, status, max_products)
-VALUES ('{tenant_id}', '{nombre}', '{slug}', 'esencial', 'active', 50);
+> **El script `setup-rls.sql` (generado por `rls-on-demand`) ahora crea el tenant automáticamente.** Ya no es necesario hacer el INSERT manual. El script imprime el UUID del tenant creado.
 
--- Plan Emprendimiento
-INSERT INTO public.tenants (id, name, slug, plan, status, max_products)
-VALUES ('{tenant_id}', '{nombre}', '{slug}', 'emprendimiento', 'active', 200);
-
--- Plan Empresa con Envia.com
-INSERT INTO public.tenants (
-  id, name, slug, plan, status, max_products,
-  envia_access_token, origin_name, origin_phone,
-  origin_address, origin_city, origin_postal_code, origin_state
-)
-VALUES (
-  '{tenant_id}', '{nombre}', '{slug}', 'empresa', 'active', NULL,
-  '{envia_token}', '{origin_name}', '{origin_phone}',
-  '{origin_address}', '{origin_city}', '{origin_postal_code}', '{origin_state}'
-);
-
--- Plan Empresa con shipping_zones (sin Envia)
-INSERT INTO public.tenants (id, name, slug, plan, status, max_products)
-VALUES ('{tenant_id}', '{nombre}', '{slug}', 'empresa', 'active', NULL);
-```
-
-Después del INSERT, cargar credenciales:
+Después de correr `setup-rls.sql`, cargar credenciales:
 ```sql
 UPDATE public.tenants SET
   mp_access_token = '{token}',
   mp_public_key = '{key}',
   resend_api_key = '{key}',
-  umami_url = 'https://cloud.umami.is/script.js'
-WHERE id = '{tenant_id}';
+  umami_url = 'https://cloud.umami.is/script.js',
+  umami_website_id = '{website_id}'
+WHERE slug = '{slug}';
 ```
+
+> **Nota:** el UPDATE usa `WHERE slug` en vez de `WHERE id` para no depender de copiar el UUID. Si se prefiere usar el UUID, usar `WHERE id = '{el-uuid-que-imprimió-setup-rls}'`.
 
 ---
 

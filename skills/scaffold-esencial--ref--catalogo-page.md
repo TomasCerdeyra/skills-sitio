@@ -73,60 +73,32 @@ export default async function CatalogPage() {
 
 La plantilla se usa como demo antes de que el cliente cargue datos reales. Sin mock data, el catálogo muestra "0 productos" y la plantilla no se puede vender.
 
-El skill `sitio-diseno` **siempre** modifica este archivo para agregar el patrón de fallback:
+El skill `sitio-diseno` **siempre** modifica este archivo para agregar fallback de datos de muestra. El patrón obligatorio es:
 
 ```typescript
-// Datos de muestra — se usan cuando el seed aún no fue ejecutado
-const MOCK_CATEGORIES = [
-  { id: "mock-cat-1", name: "Categoría A", slug: "categoria-a", position: 0 },
-  { id: "mock-cat-2", name: "Categoría B", slug: "categoria-b", position: 1 },
-  // 2-4 categorías del rubro
-];
-
-const MOCK_PRODUCTS = [
-  {
-    id: "mock-1",
-    name: "Nombre del producto",
-    slug: "nombre-del-producto",
-    price: 1200,
-    compare_at_price: null,
-    description: "Descripción verosímil del rubro.",
-    featured: true,
-    category_id: "mock-cat-1",
-    product_images: [{
-      url: "https://images.unsplash.com/photo-{ID}?w=600&q=80&auto=format&fit=crop",
-      alt: "Nombre del producto",
-      position: 0,
-    }],
-  },
-  // 10-12 productos del rubro con imágenes Unsplash válidas
-];
-
-async function getProducts() {
-  try {
-    // ... mismo fetch que antes
-  } catch {
-    return []; // evita que un error de Supabase rompa la página
-  }
-}
-
-async function getCategories() {
-  try {
-    // ... mismo fetch que antes
-  } catch {
-    return [];
-  }
-}
-
 export default async function CatalogPage() {
-  const [products, categories] = await Promise.all([getProducts(), getCategories()]);
+  let products: any[] = [];
+  let categories: any[] = [];
 
-  // Usar mock si la DB está vacía (seed no ejecutado aún)
-  const displayProducts = products.length > 0 ? products : MOCK_PRODUCTS;
-  const displayCategories = categories.length > 0 ? categories : MOCK_CATEGORIES;
+  try {
+    [products, categories] = await Promise.all([getProducts(), getCategories()]);
+  } catch {
+    // Si Supabase no está configurado, usar mock
+  }
 
-  return <CatalogClient products={displayProducts} categories={displayCategories} />;
+  // Un solo flag para decidir si usar datos reales o mock
+  const useRealData = products.length > 0 && categories.length > 0;
+  const displayProducts = useRealData ? products : MOCK_PRODUCTS;
+  const displayCategories = useRealData ? categories : MOCK_CATEGORIES;
+
+  // A partir de acá: diseño LIBRE
+  // El skill sitio-diseno decide cómo organizar y mostrar los datos
 }
 ```
 
-IDs de imágenes Unsplash por rubro → ver `sitio-diseno--ref--imagenes-placeholder.md`.
+**MOCK_PRODUCTS** debe tener 10-12 productos del rubro. **MOCK_CATEGORIES** debe tener 3-5 categorías.
+
+Las imágenes de productos usan `getProductImage()` de `lib/placeholder-images.ts` — no hace falta URLs de Unsplash en el mock.
+
+> **Importante:** usar `useRealData` (un solo flag) para que productos y categorías siempre vengan del mismo origen. Si se usan condiciones independientes, los IDs de categoría de los productos mock no coinciden con las categorías reales → filtro vacío.
+

@@ -104,7 +104,78 @@ Estas fuentes están prohibidas porque las usa todo el mundo y matan la identida
 
 ## Aplicación en código
 
-### Configuración en `app/layout.tsx`
+### ⚠️ Verificar versión de Tailwind antes de implementar
+
+La configuración de fuentes difiere según la versión de Tailwind instalada. Revisar `package.json` antes de escribir código.
+
+---
+
+### Configuración — Tailwind v4 (create-next-app@latest desde fines de 2024)
+
+**`app/layout.tsx`** — nombrar las variables CSS con el nombre de la fuente, NO con el nombre del token de @theme:
+
+```typescript
+import { Fraunces, EB_Garamond } from "next/font/google";
+import Script from "next/script";
+import "./globals.css";
+
+// ⚠️ CRÍTICO: la variable debe tener el nombre de la fuente (--font-fraunces),
+// NO el nombre del token Tailwind (--font-display).
+// Si ponés variable: "--font-display", en @theme tendrías --font-display: var(--font-display)
+// que es una referencia circular que no resuelve.
+const displayFont = Fraunces({
+  subsets: ["latin"],
+  variable: "--font-fraunces",   // nombre de la fuente, no del token
+  display: "swap",
+  weight: ["400", "600", "800"],
+});
+
+const bodyFont = EB_Garamond({
+  subsets: ["latin"],
+  variable: "--font-eb-garamond", // nombre de la fuente, no del token
+  display: "swap",
+  weight: ["400", "500", "600"],
+});
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  const umamiSrc = process.env.NEXT_PUBLIC_UMAMI_SRC || "https://cloud.umami.is/script.js";
+  const umamiId = process.env.NEXT_PUBLIC_UMAMI_WEBSITE_ID;
+
+  return (
+    <html lang="es" className={`${displayFont.variable} ${bodyFont.variable}`}>
+      <head />
+      <body>
+        {umamiId && (
+          <Script src={umamiSrc} data-website-id={umamiId} strategy="afterInteractive" />
+        )}
+        {children}
+      </body>
+    </html>
+  );
+}
+```
+
+**`app/globals.css`** — tokens de fuente en `@theme {}`:
+
+```css
+@import "tailwindcss";
+
+@theme {
+  /* Las variables --font-fraunces / --font-eb-garamond las inyecta next/font en el <html> */
+  --font-display: var(--font-fraunces), "Georgia", serif;
+  --font-body: var(--font-eb-garamond), "system-ui", sans-serif;
+
+  /* Colores, animaciones y demás tokens también van acá */
+}
+```
+
+> `@theme` NO reemplaza `tailwind.config.ts` en v4 — simplemente el config ya no es el lugar correcto para definir tokens. Los tokens van en el CSS.
+
+---
+
+### Configuración — Tailwind v3 (legacy)
+
+**`app/layout.tsx`:**
 
 ```typescript
 import { Fraunces, EB_Garamond } from "next/font/google";
@@ -151,7 +222,7 @@ export default function RootLayout({
 }
 ```
 
-### Configuración en `tailwind.config.ts`
+**`tailwind.config.ts`** (solo en v3):
 
 ```typescript
 import type { Config } from "tailwindcss";

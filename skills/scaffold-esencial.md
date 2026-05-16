@@ -61,38 +61,35 @@ Crea proyecto Next.js + TS + Tailwind + estructura base + auth + endpoints comun
 
 ### 4. Invocar skills de configuración (en orden)
 
-#### 4.1 — `supabase-connection` ✅
-Solo referencia de schema. Si la instancia ya existe (que es el caso default), no ejecutar SQL. Insertar el tenant:
+#### 4.1 — `rls-on-demand` ✅ (PRIMERO — crea el tenant)
+Plan: `esencial`. El script `setup-rls.sql` ahora:
+1. **Crea el tenant** con `INSERT INTO tenants` y genera UUID automático
+2. **Imprime el UUID** con `RAISE NOTICE` para que el usuario lo copie
+3. Habilita RLS en las tablas del plan
+4. Crea las políticas
 
-```sql
-INSERT INTO public.tenants (id, name, slug, plan, status, max_products)
-VALUES ('{tenant_id}', '{nombre}', '{slug}', 'esencial', 'active', 50);
-
-UPDATE public.tenants SET
-  resend_api_key = '...',
-  umami_url = 'https://cloud.umami.is/script.js'
-WHERE id = '{tenant_id}';
-```
-
-#### 4.1.b — Seed data de prueba (skill `sitio-diseno--ref--seed-data-sql`)
-Las plantillas demo necesitan datos para que el catálogo se vea lleno. El skill `sitio-diseno` (etapa 5) genera `scripts/seed-data.sql` adaptado al rubro. **Este paso no se hace acá** — se ejecuta cuando se invoca `sitio-diseno`. Solo dejar nota al usuario:
-
-> *"Después del INSERT del tenant, ejecutar `scripts/setup-rls.sql` (políticas) y luego `scripts/seed-data.sql` (datos de prueba). Ambos los genera este flujo."*
-
-#### 4.2 — `supabase-storage` ✅
-Bucket `objects`. Si la instancia ya tiene el bucket, no recrear. Si es instancia nueva, cargar el ref `supabase-storage--ref--bucket-config`.
-
-#### 4.3 — `rls-on-demand` ✅
-Plan: `esencial`. Cargar refs:
+Cargar refs:
 - `policies-products`
 - `policies-categories`
 - `policies-system`
 
 NO cargar `policies-shipping-zones` ni `policies-orders-coupons` (Esencial no los usa).
 
-Generar `scripts/setup-rls.sql` con esas políticas + ALTER TABLE solo de las tablas del plan.
+Generar `scripts/setup-rls.sql`.
 
-#### 4.4 — `umami-analytics` ✅
+> **Flujo del usuario:** corre `setup-rls.sql` → copia el UUID → lo pega en `.env.local` como `NEXT_PUBLIC_TENANT_ID` → lo pega en `seed-data.sql` (Ctrl+H `TODO_TENANT_ID`).
+
+#### 4.1.b — Seed data de prueba (skill `sitio-diseno--ref--seed-data-sql`)
+Las plantillas demo necesitan datos para que el catálogo se vea lleno. El skill `sitio-diseno` (etapa 5) genera `scripts/seed-data.sql` adaptado al rubro.
+
+El archivo usa `TODO_TENANT_ID` como placeholder — el usuario hace Ctrl+H y lo reemplaza con el UUID que imprimió `setup-rls.sql`.
+
+> *"Ejecutar en orden: setup-rls.sql (crea tenant + RLS), luego seed-data.sql (carga datos)."*
+
+#### 4.2 — `supabase-storage` ✅
+Bucket `objects`. Si la instancia ya tiene el bucket, no recrear. Si es instancia nueva, cargar el ref `supabase-storage--ref--bucket-config`.
+
+#### 4.3 — `umami-analytics` ✅
 Plan: `esencial`. Eventos: `whatsapp_click`, `contact_form_submit`, `view_product`, `category_click`.
 
 ---

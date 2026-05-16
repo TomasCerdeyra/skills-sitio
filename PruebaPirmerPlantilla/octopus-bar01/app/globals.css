@@ -1,0 +1,52 @@
+@import "tailwindcss";
+
+/* =============================================
+   Bar Octopus — Design Tokens
+   Tono: Bold / Brutalist
+   ADN: immersive · horizontal · featured-first · clip-reveal · transparent-overlay · full-bleed · cta-footer
+   ============================================= */
+
+:root {
+  --font-display-var: '';
+  --font-body-var: '';
+}
+
+@theme inline {
+  /* Tipografía */
+  --font-display: var(--font-display-var), sans-serif;
+  --font-body: var(--font-body-var), sans-serif;
+
+  /* Colores de marca */
+  --color-brand-primary: #E85D04;
+  --color-brand-secondary: #FFBA08;
+  --color-brand-accent: #C5572D;
+
+  /* Escala de neutros propios (warm dark) */
+  --color-neutral-50: #FAF9F7;
+  --color-neutral-100: #F0EDE8;
+  --color-neutral-200: #E0DCD5;
+  --color-neutral-300: #C4BFB6;
+  --color-neutral-500: #7A7368;
+  --color-neutral-600: #5C5650;
+  --color-neutral-700: #3D3934;
+  --color-neutral-800: #272420;
+  --color-neutral-900: #160F08;
+}
+
+body {
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: var(--color-neutral-50);
+  color: var(--color-neutral-900);
+}
+
+/* Scrollbar hide utility for filter chips */
+.scrollbar-hide::-webkit-scrollbar { display: none; }
+.scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* Marquee animation */
+@keyframes marquee {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}

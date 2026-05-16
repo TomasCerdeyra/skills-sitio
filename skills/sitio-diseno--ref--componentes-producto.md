@@ -8,38 +8,58 @@ Layout split:
 - **Desktop:** galería a la izquierda (60%), info a la derecha (40%) sticky.
 - **Mobile:** galería arriba, info abajo.
 
+> **⚠️ Tres reglas críticas:**
+> 1. `params` es una `Promise` en Next.js 15+. Usar `params: Promise<{ slug: string }>` + `await params`.
+> 2. `getProduct` debe tener try/catch y verificar `NEXT_PUBLIC_TENANT_ID` antes de llamar a Supabase.
+> 3. El componente page **necesita `MOCK_PRODUCTS` como fallback** — sin él, todos los clicks en la demo dan 404.
+
 ```tsx
 import { notFound } from "next/navigation";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getTenantId } from "@/lib/tenant";
 import { ProductDetailClient } from "@/components/ui/ProductDetailClient";
 
+// ⚠️ Obligatorio: mismo contenido que MOCK_PRODUCTS en catalogo/page.tsx
+// Incluir todos los campos: id, name, slug, price, compare_at_price, description,
+// featured, category_id, product_images[], product_variants[] (con sku:null)
+const MOCK_PRODUCTS = [
+  /* ... copiar de catalogo/page.tsx ... */
+];
+
 async function getProduct(slug: string) {
-  const tenantId = getTenantId();
-  const supabaseAdmin = createAdminClient();
-
-  const { data } = await supabaseAdmin
-    .from("products")
-    .select(`
-      id, name, slug, price, compare_at_price, description, featured,
-      category_id,
-      product_images (id, url, alt, position),
-      product_variants (id, name, sku, price, price_modifier, stock)
-    `)
-    .eq("tenant_id", tenantId)
-    .eq("slug", slug)
-    .eq("active", true)
-    .single();
-
-  return data;
+  try {
+    const tenantId = process.env.NEXT_PUBLIC_TENANT_ID; // verificar antes de usar
+    if (!tenantId) return null;
+    const supabaseAdmin = createAdminClient();
+    const { data } = await supabaseAdmin
+      .from("products")
+      .select(`
+        id, name, slug, price, compare_at_price, description, featured,
+        category_id,
+        product_images (id, url, alt, position),
+        product_variants (id, name, sku, price, price_modifier, stock)
+      `)
+      .eq("tenant_id", tenantId)
+      .eq("slug", slug)
+      .eq("active", true)
+      .single();
+    return data ?? null;
+  } catch {
+    return null;
+  }
 }
 
 export default async function ProductPage({
   params,
 }: {
-  params: { slug: string };
+  params: Promise<{ slug: string }>; // ⚠️ Promise en Next.js 15+
 }) {
-  const product = await getProduct(params.slug);
+  const { slug } = await params; // ⚠️ await — no params.slug directo
+
+  const dbProduct = await getProduct(slug);
+  const product =
+    dbProduct ??
+    (MOCK_PRODUCTS.find((p) => p.slug === slug) as typeof MOCK_PRODUCTS[0] | undefined);
+
   if (!product) notFound();
 
   return <ProductDetailClient product={product} />;
@@ -261,14 +281,24 @@ export function ProductGallery({ images, alt }: GalleryProps) {
 
 ## Selector de variantes
 
+> ⚠️ **Tipo `Variant` — regla crítica:** El `VariantSelector` recibe variantes directamente de `product.product_variants`. TypeScript infiere el tipo del `useState` en `ProductDetailClient` con todos los campos del producto. Si `Variant` en el selector solo tiene `{ id, name, stock }`, el `onSelect={setSelectedVariant}` falla con:
+> *"Type 'Variant' is not assignable to SetStateAction<{...}>: Type 'Variant' is missing properties: sku, price, price_modifier"*
+>
+> **Solución:** el tipo `Variant` del selector debe incluir TODOS los campos que devuelve Supabase para `product_variants`.
+
 ```tsx
 "use client";
 
 import { trackEvent } from "@/lib/analytics/umami";
 
+// IMPORTANTE: incluir todos los campos de product_variants para evitar error TypeScript
+// cuando se pasa setSelectedVariant como onSelect desde ProductDetailClient
 interface Variant {
   id: string;
   name: string;
+  sku: string | null;
+  price: number | null;
+  price_modifier: number | null;
   stock: number | null;
 }
 

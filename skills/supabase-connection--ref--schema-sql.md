@@ -88,7 +88,9 @@ CREATE TABLE IF NOT EXISTS public.products (
   description TEXT,
   slug TEXT,
   category_id UUID REFERENCES public.categories(id),
-  compare_at_price NUMERIC
+  compare_at_price NUMERIC,
+  is_sale BOOLEAN DEFAULT false,
+  sale_price NUMERIC
 );
 
 -- =============================================
@@ -137,7 +139,7 @@ CREATE TABLE IF NOT EXISTS public.orders (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   tenant_id UUID REFERENCES public.tenants(id) ON DELETE CASCADE,
   mp_payment_id TEXT,
-  status TEXT,                            -- 'created' | 'pending' | 'approved' | 'cancelled' | 'rejected'
+  status TEXT CHECK (status IN ('pending', 'confirmed', 'preparing', 'shipped', 'delivered', 'cancelled')),
   total NUMERIC,
   payer_email TEXT,
   created_at TIMESTAMPTZ DEFAULT now(),
@@ -213,6 +215,52 @@ CREATE INDEX IF NOT EXISTS idx_order_items_order ON public.order_items(order_id)
 CREATE INDEX IF NOT EXISTS idx_coupons_tenant_code ON public.coupons(tenant_id, code);
 CREATE INDEX IF NOT EXISTS idx_user_tenants_user ON public.user_tenants(user_id);
 CREATE INDEX IF NOT EXISTS idx_user_tenants_tenant ON public.user_tenants(tenant_id);
+
+-- =============================================
+-- CONTACT MESSAGES (todos los planes)
+-- =============================================
+CREATE TABLE IF NOT EXISTS public.contact_messages (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id UUID NOT NULL REFERENCES public.tenants(id),
+  name TEXT NOT NULL,
+  email TEXT NOT NULL,
+  phone TEXT,
+  message TEXT NOT NULL,
+  source TEXT DEFAULT 'contact_form',
+  status TEXT DEFAULT 'new' CHECK (status IN ('new', 'read', 'archived')),
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- =============================================
+-- ORDER EVENTS (Emprendimiento y Empresa)
+-- =============================================
+CREATE TABLE IF NOT EXISTS public.order_events (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id UUID NOT NULL REFERENCES public.tenants(id),
+  order_id UUID REFERENCES public.orders(id),
+  type TEXT NOT NULL,
+  payload JSONB DEFAULT '{}',
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- =============================================
+-- PAYMENT EVENTS (Emprendimiento y Empresa)
+-- =============================================
+CREATE TABLE IF NOT EXISTS public.payment_events (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id UUID NOT NULL REFERENCES public.tenants(id),
+  order_id UUID REFERENCES public.orders(id),
+  provider TEXT NOT NULL DEFAULT 'mercadopago',
+  provider_event_id TEXT,
+  status TEXT,
+  payload JSONB DEFAULT '{}',
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- Índices adicionales
+CREATE INDEX IF NOT EXISTS idx_contact_messages_tenant ON public.contact_messages(tenant_id, status);
+CREATE INDEX IF NOT EXISTS idx_order_events_order ON public.order_events(order_id);
+CREATE INDEX IF NOT EXISTS idx_payment_events_order ON public.payment_events(order_id);
 ```
 
 ## Después de ejecutar el SQL

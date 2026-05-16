@@ -1,8 +1,47 @@
-# Reference: Componentes de navegación
+# Reference: Componentes de navegación — Referencia Técnica
 
 Header, Footer y menú mobile. Estos componentes están en TODAS las páginas — su calidad afecta la percepción global del sitio.
 
-## Header
+**Este archivo es REFERENCIA TÉCNICA** — muestra patrones de implementación en Next.js (shrink al scroll, mobile drawer, etc.). Los ejemplos de abajo son VARIACIONES para inspirarte, no las únicas opciones. Diseñá el header y footer como quieras. Consultá `sitio-diseno--ref--inspiracion-diseno.md` para más ideas.
+
+---
+
+## ⚠️ REGLA CRÍTICA: Header visible en TODAS las páginas
+
+Si el header es transparente sobre el hero de la home, **debe volverse sólido** en las demás páginas (catálogo, nosotros, contacto, producto). Un header transparente sobre fondo blanco es invisible.
+
+**Patrón recomendado:** usar `usePathname()` para detectar si estás en la home:
+
+```tsx
+"use client";
+import { usePathname } from "next/navigation";
+
+export function Header() {
+  const pathname = usePathname();
+  const isHome = pathname === "/";
+  const [scrolled, setScrolled] = useState(false);
+
+  // En home: transparente al inicio, sólido al scroll
+  // En otras páginas: siempre sólido
+  const showSolid = !isHome || scrolled;
+
+  return (
+    <header className={`fixed top-0 w-full z-50 transition-all duration-300 ${
+      showSolid 
+        ? "bg-white shadow-sm" // o bg-neutral-900 si es tema oscuro
+        : "bg-transparent"
+    }`}>
+      {/* ... */}
+    </header>
+  );
+}
+```
+
+**Regla:** el header debe ser visible y legible en TODAS las páginas. Si en el catálogo no se ve, el diseño está roto.
+
+---
+
+## Header — Standard Left (`standard-left`)
 
 ### Estructura mínima
 
@@ -10,7 +49,7 @@ Header, Footer y menú mobile. Estos componentes están en TODAS las páginas �
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { MobileMenu } from "./MobileMenu";
 
 interface HeaderProps {
@@ -23,12 +62,11 @@ export function Header({ brandName, showCart, cartCount = 0 }: HeaderProps) {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  // Listener de scroll para shrink del header
-  if (typeof window !== "undefined") {
-    window.addEventListener("scroll", () => {
-      setScrolled(window.scrollY > 20);
-    }, { passive: true });
-  }
+  useEffect(() => {
+    const handleScroll = () => setScrolled(window.scrollY > 20);
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   return (
     <header
@@ -76,7 +114,173 @@ export function Header({ brandName, showCart, cartCount = 0 }: HeaderProps) {
     </header>
   );
 }
+```
 
+---
+
+## Header — Centered Logo (`centered-logo`)
+
+Logo centrado, links a izquierda, acciones a derecha. Estética editorial / lujo.
+
+```tsx
+"use client";
+
+import Link from "next/link";
+import { useState, useEffect } from "react";
+import { MobileMenu } from "./MobileMenu";
+
+export function HeaderCentered({ brandName, showCart, cartCount = 0 }: {
+  brandName: string;
+  showCart?: boolean;
+  cartCount?: number;
+}) {
+  const [scrolled, setScrolled] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => setScrolled(window.scrollY > 20);
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  return (
+    <header
+      className={`fixed top-0 left-0 right-0 z-30 transition-all duration-300 ${
+        scrolled
+          ? "bg-neutral-50/95 backdrop-blur-md shadow-sm"
+          : "bg-transparent"
+      }`}
+    >
+      <div className="max-w-7xl mx-auto px-6 lg:px-8">
+        <div className={`grid grid-cols-3 items-center transition-all duration-300 ${
+          scrolled ? "h-16" : "h-20"
+        }`}>
+          {/* Links izquierda */}
+          <nav className="hidden lg:flex items-center gap-8">
+            <NavLink href="/catalogo">Catálogo</NavLink>
+            <NavLink href="/nosotros">Nosotros</NavLink>
+          </nav>
+
+          {/* Logo centrado */}
+          <Link href="/" className="font-display text-xl lg:text-2xl font-bold text-neutral-900 tracking-tight text-center justify-self-center">
+            {brandName}
+          </Link>
+
+          {/* Links derecha + acciones */}
+          <div className="flex items-center justify-end gap-8">
+            <nav className="hidden lg:flex items-center gap-8">
+              <NavLink href="/contacto">Contacto</NavLink>
+            </nav>
+            {showCart && <CartButton count={cartCount} />}
+            <button
+              onClick={() => setMobileOpen(true)}
+              className="lg:hidden p-2 hover:bg-neutral-100 rounded-md transition-colors"
+              aria-label="Menú"
+            >
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <line x1="3" y1="6" x2="21" y2="6" />
+                <line x1="3" y1="12" x2="21" y2="12" />
+                <line x1="3" y1="18" x2="21" y2="18" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <MobileMenu open={mobileOpen} onClose={() => setMobileOpen(false)} showCart={showCart} />
+    </header>
+  );
+}
+```
+
+---
+
+## Header — Transparent Overlay (`transparent-overlay`)
+
+Completamente transparente sobre el hero (texto blanco), se vuelve sólido al scroll. Ideal cuando el hero es `immersive` o `video-ambient`.
+
+```tsx
+"use client";
+
+import Link from "next/link";
+import { useState, useEffect } from "react";
+import { MobileMenu } from "./MobileMenu";
+
+export function HeaderTransparent({ brandName, showCart, cartCount = 0 }: {
+  brandName: string;
+  showCart?: boolean;
+  cartCount?: number;
+}) {
+  const [scrolled, setScrolled] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => setScrolled(window.scrollY > 80);
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  return (
+    <header
+      className={`fixed top-0 left-0 right-0 z-30 transition-all duration-500 ${
+        scrolled
+          ? "bg-neutral-900/95 backdrop-blur-md shadow-lg"
+          : "bg-transparent"
+      }`}
+    >
+      <div className="max-w-7xl mx-auto px-6 lg:px-8">
+        <div className={`flex items-center justify-between transition-all duration-300 ${
+          scrolled ? "h-16" : "h-20"
+        }`}>
+          <Link href="/" className="font-display text-xl lg:text-2xl font-bold text-white tracking-tight">
+            {brandName}
+          </Link>
+
+          <nav className="hidden lg:flex items-center gap-10">
+            <a href="/catalogo" className="font-body text-white/80 hover:text-white transition-colors relative group">
+              Catálogo
+              <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-white transition-all duration-300 group-hover:w-full" />
+            </a>
+            <a href="/nosotros" className="font-body text-white/80 hover:text-white transition-colors relative group">
+              Nosotros
+              <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-white transition-all duration-300 group-hover:w-full" />
+            </a>
+            <a href="/contacto" className="font-body text-white/80 hover:text-white transition-colors relative group">
+              Contacto
+              <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-white transition-all duration-300 group-hover:w-full" />
+            </a>
+          </nav>
+
+          <div className="flex items-center gap-4">
+            {showCart && <CartButton count={cartCount} />}
+            <button
+              onClick={() => setMobileOpen(true)}
+              className="lg:hidden p-2 text-white hover:bg-white/10 rounded-md transition-colors"
+              aria-label="Menú"
+            >
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <line x1="3" y1="6" x2="21" y2="6" />
+                <line x1="3" y1="12" x2="21" y2="12" />
+                <line x1="3" y1="18" x2="21" y2="18" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <MobileMenu open={mobileOpen} onClose={() => setMobileOpen(false)} showCart={showCart} />
+    </header>
+  );
+}
+```
+
+> **Nota:** cuando el hero es `immersive` o `video-ambient`, usar `transparent-overlay`. El texto blanco del header se funde con el overlay del hero. Al scrollear, el header pasa a fondo sólido oscuro.
+
+---
+
+## Funciones auxiliares (compartidas por todas las variantes)
+
+```tsx
 function NavLink({ href, children }: { href: string; children: React.ReactNode }) {
   return (
     <Link
@@ -84,7 +288,6 @@ function NavLink({ href, children }: { href: string; children: React.ReactNode }
       className="font-body text-neutral-700 hover:text-brand-primary transition-colors relative group"
     >
       {children}
-      {/* Underline animado custom */}
       <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-brand-primary transition-all duration-300 group-hover:w-full" />
     </Link>
   );
@@ -190,7 +393,7 @@ export function MobileMenu({
 
 ---
 
-## Footer
+## Footer — Mega Dark (`mega-dark`)
 
 ```tsx
 "use client";
@@ -244,14 +447,6 @@ export function Footer({ brandName, brandTagline }: FooterProps) {
                   WhatsApp
                 </a>
               </li>
-              <li>
-                <a href="mailto:{COMPLETAR}" className="font-body hover:text-brand-primary transition-colors">
-                  {`{COMPLETAR: email del negocio}`}
-                </a>
-              </li>
-              <li className="font-body text-neutral-50/70">
-                {`{COMPLETAR: dirección física si aplica}`}
-              </li>
             </ul>
           </div>
         </div>
@@ -262,6 +457,107 @@ export function Footer({ brandName, brandTagline }: FooterProps) {
           </p>
           <p className="font-body text-sm text-neutral-50/40">
             Sitio por <a href="https://sitiohoy.com.ar" className="hover:text-brand-primary transition-colors">SitioHoy</a>
+          </p>
+        </div>
+      </div>
+    </footer>
+  );
+}
+```
+
+---
+
+## Footer — Minimal Strip (`minimal-strip`)
+
+Una sola fila. Minimalista, discreto. Para diseños donde el footer no es protagonista.
+
+```tsx
+"use client";
+
+import Link from "next/link";
+
+export function FooterStrip({ brandName }: { brandName: string }) {
+  const year = new Date().getFullYear();
+
+  return (
+    <footer className="border-t border-neutral-200 mt-24">
+      <div className="max-w-7xl mx-auto px-6 lg:px-8 py-8">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+          <p className="font-display text-lg font-bold text-neutral-900 tracking-tight">
+            {brandName}
+          </p>
+          <nav className="flex items-center gap-6">
+            <Link href="/catalogo" className="font-body text-sm text-neutral-600 hover:text-brand-primary transition-colors">Catálogo</Link>
+            <Link href="/nosotros" className="font-body text-sm text-neutral-600 hover:text-brand-primary transition-colors">Nosotros</Link>
+            <Link href="/contacto" className="font-body text-sm text-neutral-600 hover:text-brand-primary transition-colors">Contacto</Link>
+          </nav>
+          <p className="font-body text-sm text-neutral-400">
+            © {year} · Sitio por <a href="https://sitiohoy.com.ar" className="hover:text-brand-primary transition-colors">SitioHoy</a>
+          </p>
+        </div>
+      </div>
+    </footer>
+  );
+}
+```
+
+---
+
+## Footer — CTA Footer (`cta-footer`)
+
+Un CTA grande de conversión arriba + datos de contacto abajo. Para diseños que buscan una última acción del visitante.
+
+```tsx
+"use client";
+
+import Link from "next/link";
+import { buildWhatsAppLink } from "@/lib/whatsapp";
+
+export function FooterCTA({ brandName, ctaText, ctaHref }: {
+  brandName: string;
+  ctaText?: string;
+  ctaHref?: string;
+}) {
+  const year = new Date().getFullYear();
+
+  return (
+    <footer className="mt-24">
+      {/* CTA Block */}
+      <div className="bg-brand-primary">
+        <div className="max-w-4xl mx-auto px-6 py-20 text-center">
+          <h2 className="font-display text-4xl lg:text-6xl font-bold text-neutral-900 mb-6">
+            {ctaText || "¿Listo para empezar?"}
+          </h2>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Link
+              href={ctaHref || "/contacto"}
+              className="inline-flex items-center justify-center gap-2 bg-neutral-900 text-neutral-50 px-10 py-4 font-medium hover:bg-neutral-800 transition-colors"
+            >
+              Contactanos
+            </Link>
+            <a
+              href={buildWhatsAppLink()}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center justify-center gap-2 border-2 border-neutral-900 text-neutral-900 px-10 py-4 font-medium hover:bg-neutral-900 hover:text-neutral-50 transition-colors"
+            >
+              WhatsApp
+            </a>
+          </div>
+        </div>
+      </div>
+
+      {/* Info strip */}
+      <div className="bg-neutral-900 text-neutral-50">
+        <div className="max-w-7xl mx-auto px-6 lg:px-8 py-8 flex flex-col sm:flex-row justify-between items-center gap-4">
+          <p className="font-display text-lg font-bold tracking-tight">{brandName}</p>
+          <nav className="flex items-center gap-6">
+            <Link href="/catalogo" className="font-body text-sm text-neutral-50/70 hover:text-white transition-colors">Catálogo</Link>
+            <Link href="/nosotros" className="font-body text-sm text-neutral-50/70 hover:text-white transition-colors">Nosotros</Link>
+            <Link href="/contacto" className="font-body text-sm text-neutral-50/70 hover:text-white transition-colors">Contacto</Link>
+          </nav>
+          <p className="font-body text-sm text-neutral-50/40">
+            © {year} · Sitio por <a href="https://sitiohoy.com.ar" className="hover:text-brand-primary transition-colors">SitioHoy</a>
           </p>
         </div>
       </div>

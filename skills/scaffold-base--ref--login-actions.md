@@ -4,6 +4,8 @@ Path destino: `app/login/actions.ts`
 
 Server actions para login y signup. El signup crea automáticamente la membresía en `user_tenants`.
 
+> ⚠️ **Next.js 15+:** Las funciones usadas como `formAction` en JSX deben retornar `Promise<void>`. NO retornar objetos `{ error: string }` — TypeScript falla con "not assignable to type `(formData: FormData) => void | Promise<void>`". Los errores se manejan con `console.error` + `return` sin valor.
+
 ```typescript
 "use server";
 
@@ -12,7 +14,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 
-export async function login(formData: FormData) {
+export async function login(formData: FormData): Promise<void> {
   const supabase = await createClient();
 
   const { error } = await supabase.auth.signInWithPassword({
@@ -20,13 +22,17 @@ export async function login(formData: FormData) {
     password: formData.get("password") as string,
   });
 
-  if (error) return { error: error.message };
+  if (error) {
+    // En producción: mostrar feedback al usuario via URL params o server state
+    console.error("Login error:", error.message);
+    return;
+  }
 
   revalidatePath("/", "layout");
   redirect("/admin");
 }
 
-export async function signup(formData: FormData) {
+export async function signup(formData: FormData): Promise<void> {
   const supabase = await createClient();
   const adminClient = createAdminClient();
 
@@ -35,7 +41,10 @@ export async function signup(formData: FormData) {
   const tenantId = process.env.NEXT_PUBLIC_TENANT_ID;
 
   const { data: authData, error } = await supabase.auth.signUp({ email, password });
-  if (error) return { error: error.message };
+  if (error) {
+    console.error("Signup error:", error.message);
+    return;
+  }
 
   if (authData.user && tenantId) {
     await adminClient.from("user_tenants").insert({

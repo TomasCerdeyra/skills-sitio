@@ -77,9 +77,51 @@ npm install framer-motion
 
 ---
 
+## Familias de animación — referencia
+
+Hay varias familias de animación disponibles. **Mezclar 2-3 tipos distintos** en la misma página genera más impacto que usar el mismo efecto para todo. Elegí las que mejor encajen con el mood del proyecto.
+
+| Familia | Componente de reveal | Efecto | Cuándo funciona bien |
+|---------|---------------------|--------|---------------------|
+| Fade up | `FadeUpOnScroll` | opacity + translateY | Suave, editorial, seguro |
+| Slide lateral | `SlideFromSide` | Entra desde izquierda/derecha | Dinamismo, ritmo visual |
+| Clip reveal | `ClipRevealOnScroll` | Cortina con clip-path | Lujo, editorial premium |
+| Scale pop | `ScalePopOnScroll` | Scale con bounce spring | Pop, juvenil, vibrante |
+
+**Tip:** no uses fade-up para TODO. Mezclar un fade-up con un clip-reveal y un stagger creativo genera mucha más diversidad visual.
+
+---
+
+## ⚠️ TypeScript — `ease` dentro de Variants (framer-motion v11+)
+
+Cuando `ease` se usa **directamente** como prop de un elemento `<motion.div>` no hay problema:
+
+```tsx
+// ✅ Funciona sin cast — es un prop directo del elemento
+<motion.div transition={{ duration: 0.6, ease: [0.25, 0.1, 0.25, 1] }} />
+```
+
+Pero cuando `ease` está **dentro de un objeto `Variants`**, TypeScript es estricto y falla:
+
+```tsx
+// ❌ Error TypeScript: "number[] is not assignable to type 'Easing'"
+const itemVariants = {
+  visible: { opacity: 1, transition: { ease: [0.25, 0.1, 0.25, 1] } },
+};
+
+// ✅ Correcto — castear como tupla bezier
+const itemVariants = {
+  visible: { opacity: 1, transition: { ease: [0.25, 0.1, 0.25, 1] as [number, number, number, number] } },
+};
+```
+
+**Regla:** en cualquier objeto `Variants`, agregar `as [number, number, number, number]` al array de `ease`.
+
+---
+
 ## Patrones reusables
 
-### 1. FadeUpOnScroll — el patrón más usado
+### 1. FadeUpOnScroll — familia `fade-up` (el clásico)
 
 ```tsx
 "use client";
@@ -130,6 +172,178 @@ Uso (ejemplo del Home):
 </section>
 ```
 
+---
+
+### 1b. SlideFromSide — familia `slide-lateral`
+
+Elementos entran alternando desde izquierda y derecha. Crea un efecto de movimiento dinámico, ideal para tonos Bold y Vibrante.
+
+```tsx
+"use client";
+
+import { motion } from "framer-motion";
+import type { ReactNode } from "react";
+
+export function SlideFromSide({
+  children,
+  index = 0,
+  delay = 0,
+  className = "",
+}: {
+  children: ReactNode;
+  index?: number;
+  delay?: number;
+  className?: string;
+}) {
+  const fromLeft = index % 2 === 0;
+  return (
+    <motion.div
+      initial={{ opacity: 0, x: fromLeft ? -60 : 60 }}
+      whileInView={{ opacity: 1, x: 0 }}
+      viewport={{ once: true, margin: "-50px" }}
+      transition={{ duration: 0.7, delay, ease: [0.25, 0.1, 0.25, 1] }}
+      className={className}
+    >
+      {children}
+    </motion.div>
+  );
+}
+```
+
+Uso:
+
+```tsx
+<section className="py-20">
+  <SlideFromSide index={0}>
+    <h2 className="font-display text-5xl mb-6">Nuestros productos</h2>
+  </SlideFromSide>
+  <div className="grid lg:grid-cols-3 gap-6">
+    {features.map((f, i) => (
+      <SlideFromSide key={f.id} index={i} delay={i * 0.08}>
+        <FeatureCard {...f} />
+      </SlideFromSide>
+    ))}
+  </div>
+</section>
+```
+
+---
+
+### 1c. ClipRevealOnScroll — familia `clip-reveal`
+
+Efecto de cortina/revelación usando `clipPath`. Las secciones se descubren como si se levantara un telón. Elegante para tonos Lujo y Editorial.
+
+```tsx
+"use client";
+
+import { motion } from "framer-motion";
+import type { ReactNode } from "react";
+
+export function ClipRevealOnScroll({
+  children,
+  delay = 0,
+  direction = "up",
+  className = "",
+}: {
+  children: ReactNode;
+  delay?: number;
+  direction?: "up" | "left" | "right";
+  className?: string;
+}) {
+  const clipPaths = {
+    up: {
+      hidden: "inset(100% 0 0 0)",
+      visible: "inset(0 0 0 0)",
+    },
+    left: {
+      hidden: "inset(0 100% 0 0)",
+      visible: "inset(0 0 0 0)",
+    },
+    right: {
+      hidden: "inset(0 0 0 100%)",
+      visible: "inset(0 0 0 0)",
+    },
+  };
+
+  return (
+    <motion.div
+      initial={{ clipPath: clipPaths[direction].hidden, opacity: 0.3 }}
+      whileInView={{ clipPath: clipPaths[direction].visible, opacity: 1 }}
+      viewport={{ once: true, margin: "-50px" }}
+      transition={{ duration: 0.9, delay, ease: [0.25, 0.1, 0.25, 1] }}
+      className={className}
+    >
+      {children}
+    </motion.div>
+  );
+}
+```
+
+Uso:
+
+```tsx
+<section className="py-20">
+  <ClipRevealOnScroll>
+    <h2 className="font-display text-5xl mb-6">Nuestra historia</h2>
+  </ClipRevealOnScroll>
+  <ClipRevealOnScroll delay={0.15} direction="left">
+    <img src="..." alt="..." className="w-full aspect-[16/9] object-cover" />
+  </ClipRevealOnScroll>
+</section>
+```
+
+---
+
+### 1d. ScalePopOnScroll — familia `scale-pop`
+
+Elementos aparecen con un pop elástico (spring). Ideal para tonos Vibrante/Pop y marcas juveniles. Usa physics de spring en vez de easing.
+
+```tsx
+"use client";
+
+import { motion } from "framer-motion";
+import type { ReactNode } from "react";
+
+export function ScalePopOnScroll({
+  children,
+  delay = 0,
+  className = "",
+}: {
+  children: ReactNode;
+  delay?: number;
+  className?: string;
+}) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.85 }}
+      whileInView={{ opacity: 1, scale: 1 }}
+      viewport={{ once: true, margin: "-50px" }}
+      transition={{
+        type: "spring",
+        damping: 20,
+        stiffness: 200,
+        delay,
+      }}
+      className={className}
+    >
+      {children}
+    </motion.div>
+  );
+}
+```
+
+Uso:
+
+```tsx
+<div className="grid lg:grid-cols-3 gap-6">
+  {products.map((p, i) => (
+    <ScalePopOnScroll key={p.id} delay={i * 0.06}>
+      <ProductCard product={p} />
+    </ScalePopOnScroll>
+  ))}
+</div>
+```
+
 ### 2. HeroAnimated — entrada del Hero con stagger
 
 ```tsx
@@ -149,7 +363,7 @@ const itemVariants = {
   visible: {
     opacity: 1,
     y: 0,
-    transition: { duration: 0.7, ease: [0.25, 0.1, 0.25, 1] },
+    transition: { duration: 0.7, ease: [0.25, 0.1, 0.25, 1] as [number, number, number, number] },
   },
 };
 
@@ -193,7 +407,7 @@ const containerVariants = {
 
 const itemVariants = {
   hidden: { opacity: 0, y: 20 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.25, 0.1, 0.25, 1] } },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.25, 0.1, 0.25, 1] as [number, number, number, number] } },
 };
 
 export function StaggerGrid({ items, renderItem }) {

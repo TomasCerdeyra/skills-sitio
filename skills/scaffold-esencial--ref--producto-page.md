@@ -4,37 +4,46 @@ Path destino: `app/(public)/producto/[slug]/page.tsx`
 
 Detalle de producto. Trae imágenes ordenadas y variantes (display only). **El skill `sitio-diseno` arma la galería, el selector de variantes y el WhatsApp CTA.**
 
+> ⚠️ **Next.js 15+:** `params` es una `Promise`. Usar `params: Promise<{ slug: string }>` y `await params` en el cuerpo de la función. La firma antigua `params: { slug: string }` genera error de TypeScript en Next.js 15+.
+> 
+> ⚠️ Envolver el fetch de Supabase en `try/catch` — si `NEXT_PUBLIC_TENANT_ID` no está definido durante el build estático, `getTenantId()` lanza una excepción que rompe la página.
+
 ```typescript
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getTenantId } from "@/lib/tenant";
 import { notFound } from "next/navigation";
 
 async function getProduct(slug: string) {
-  const tenantId = getTenantId();
-  const supabaseAdmin = createAdminClient();
+  try {
+    const tenantId = getTenantId();
+    const supabaseAdmin = createAdminClient();
 
-  const { data } = await supabaseAdmin
-    .from("products")
-    .select(`
-      id, name, slug, price, compare_at_price, description, featured,
-      category_id,
-      product_images (id, url, alt, position),
-      product_variants (id, name, sku, price, price_modifier, stock)
-    `)
-    .eq("tenant_id", tenantId)
-    .eq("slug", slug)
-    .eq("active", true)
-    .single();
+    const { data } = await supabaseAdmin
+      .from("products")
+      .select(`
+        id, name, slug, price, compare_at_price, description, featured,
+        category_id,
+        product_images (id, url, alt, position),
+        product_variants (id, name, sku, price, price_modifier, stock)
+      `)
+      .eq("tenant_id", tenantId)
+      .eq("slug", slug)
+      .eq("active", true)
+      .single();
 
-  return data;
+    return data;
+  } catch {
+    return null;
+  }
 }
 
 export default async function ProductPage({
   params,
 }: {
-  params: { slug: string };
+  params: Promise<{ slug: string }>;
 }) {
-  const product = await getProduct(params.slug);
+  const { slug } = await params;
+  const product = await getProduct(slug);
   if (!product) notFound();
 
   // TODO: skill sitio-diseno — galería, selector de variantes, botón WhatsApp

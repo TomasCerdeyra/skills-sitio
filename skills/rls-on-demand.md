@@ -56,16 +56,57 @@ Generar el archivo `scripts/setup-rls.sql` concatenando:
 
 ```sql
 -- =============================================
--- RLS Setup — Plan {nombre_plan}
--- Tenant: {tenant_name} ({tenant_id})
+-- RLS Setup + Tenant Creation — Plan {nombre_plan}
+-- Negocio: {tenant_name}
 -- Generado: {fecha}
 -- Ejecutar en: Supabase Dashboard → SQL Editor
 -- =============================================
 --
--- IMPORTANTE: Si las políticas ya existen, descomentar los DROP POLICY
+-- Este script:
+-- 1. Crea el tenant en la tabla tenants (genera UUID automático)
+-- 2. Habilita RLS en todas las tablas del plan
+-- 3. Crea las políticas de seguridad
+--
+-- IMPORTANTE: Anotar el UUID del tenant que imprime al final.
+-- Ese UUID se usa en:
+--   - .env.local → NEXT_PUBLIC_TENANT_ID
+--   - scripts/seed-data.sql → Ctrl+H reemplazar TODO_TENANT_ID
+--
+-- Si las políticas ya existen, descomentar los DROP POLICY
 -- IF EXISTS antes de crearlas (vienen comentados en cada bloque).
 --
 ```
+
+### Crear tenant (PRIMER PASO del script)
+
+Generar este bloque al inicio, ANTES de habilitar RLS:
+
+```sql
+-- =============================================
+-- 0. CREAR TENANT
+-- =============================================
+DO $$
+DECLARE
+  _tenant_id UUID;
+BEGIN
+  INSERT INTO public.tenants (name, slug, plan, status, max_products)
+  VALUES ('{nombre}', '{slug}', '{plan}', 'active', {max_products})
+  RETURNING id INTO _tenant_id;
+
+  RAISE NOTICE '';
+  RAISE NOTICE '================================================';
+  RAISE NOTICE '  ✅ TENANT CREADO';
+  RAISE NOTICE '  UUID: %', _tenant_id;
+  RAISE NOTICE '================================================';
+  RAISE NOTICE '';
+  RAISE NOTICE '  → Copiar este UUID y pegarlo en:';
+  RAISE NOTICE '    1. .env.local → NEXT_PUBLIC_TENANT_ID=%', _tenant_id;
+  RAISE NOTICE '    2. seed-data.sql → Ctrl+H TODO_TENANT_ID → %', _tenant_id;
+  RAISE NOTICE '';
+END $$;
+```
+
+> **Nota:** el `max_products` varía por plan: `50` (Esencial), `200` (Emprendimiento), `NULL` (Empresa). El `{slug}` debe ser kebab-case ASCII sin tildes.
 
 ### Habilitar RLS
 

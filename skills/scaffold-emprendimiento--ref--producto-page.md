@@ -4,46 +4,79 @@ Path destino: `app/(public)/producto/[slug]/page.tsx`
 
 Detalle de producto. La query es la misma que en Esencial — la diferencia está en la UI: Emprendimiento agrega lógica de "agregar al carrito" + selector de variantes con stock real.
 
+## ⚠️ Tres reglas críticas para no romper la demo
+
+1. **`params` es una Promise en Next.js 15+.** Usar `await params` — NO `params.slug` directo.
+2. **`getProduct` con try/catch.** Si las credenciales de Supabase no están configuradas, la función debe devolver `null` sin lanzar. Jamás llamar a `getTenantId()` sin un try/catch exterior.
+3. **Mock data obligatorio.** La plantilla se muestra como demo con la DB vacía. Sin mock, cualquier click en un producto termina en 404. Los slugs del mock DEBEN coincidir exactamente con los slugs del `MOCK_PRODUCTS` del catálogo.
+
 ```typescript
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getTenantId } from "@/lib/tenant";
 import { notFound } from "next/navigation";
+import { ProductDetailClient } from "@/components/ui/ProductDetailClient";
+
+// ============================================================
+// MOCK DATA — fallback cuando la DB no está configurada
+// IMPORTANTE: los slugs deben coincidir con los de MOCK_PRODUCTS en catalogo/page.tsx
+// ============================================================
+const MOCK_PRODUCTS = [
+  {
+    id: "mock-1", name: "Producto 1", slug: "producto-1",
+    price: 1500, compare_at_price: null,
+    description: "Descripción del producto 1.",
+    featured: true, category_id: "mock-cat-1",
+    product_images: [{ id: "i1", url: "https://picsum.photos/seed/producto-1/800/600", alt: "Producto 1", position: 0 }],
+    product_variants: [],
+  },
+  // ... copiar acá los mismos productos que están en MOCK_PRODUCTS del catálogo
+  // con TODOS los campos: id, name, slug, price, compare_at_price, description,
+  // featured, category_id, product_images[], product_variants[]
+  // product_variants necesita: id, name, sku (null), price, price_modifier, stock
+];
 
 async function getProduct(slug: string) {
-  const tenantId = getTenantId();
-  const supabaseAdmin = createAdminClient();
+  try {
+    // Verificar env var antes de usarla — no lanzar si no está definida
+    const tenantId = process.env.NEXT_PUBLIC_TENANT_ID;
+    if (!tenantId) return null;
 
-  const { data } = await supabaseAdmin
-    .from("products")
-    .select(`
-      id, name, slug, price, compare_at_price, description, featured,
-      category_id,
-      product_images (id, url, alt, position),
-      product_variants (id, name, sku, price, price_modifier, stock)
-    `)
-    .eq("tenant_id", tenantId)
-    .eq("slug", slug)
-    .eq("active", true)
-    .single();
+    const supabaseAdmin = createAdminClient();
+    const { data } = await supabaseAdmin
+      .from("products")
+      .select(`
+        id, name, slug, price, compare_at_price, description, featured,
+        category_id,
+        product_images (id, url, alt, position),
+        product_variants (id, name, sku, price, price_modifier, stock)
+      `)
+      .eq("tenant_id", tenantId)
+      .eq("slug", slug)
+      .eq("active", true)
+      .single();
 
-  return data;
+    return data ?? null;
+  } catch {
+    return null;
+  }
 }
 
 export default async function ProductPage({
   params,
 }: {
-  params: { slug: string };
+  params: Promise<{ slug: string }>; // ⚠️ Promise en Next.js 15+
 }) {
-  const product = await getProduct(params.slug);
+  const { slug } = await params; // ⚠️ await params — NO params.slug directo
+
+  // DB primero; si falla o está vacía, buscar en mock
+  const dbProduct = await getProduct(slug);
+  const product =
+    dbProduct ??
+    (MOCK_PRODUCTS.find((p) => p.slug === slug) as typeof MOCK_PRODUCTS[0] | undefined);
+
   if (!product) notFound();
 
   // TODO: skill sitio-diseno — galería, selector de variantes, botón agregar al carrito
-  return (
-    <div>
-      <h1>{product.name}</h1>
-      <p>${product.price}</p>
-    </div>
-  );
+  return <ProductDetailClient product={product} />;
 }
 ```
 
@@ -53,3 +86,4 @@ export default async function ProductPage({
 - Si todas las variantes tienen stock 0 → el botón "agregar al carrito" se deshabilita.
 - El precio mostrado al seleccionar una variante es `product.price + variant.price_modifier`. Si la variante tiene `price` propio (no nulo), ese reemplaza al cálculo.
 - Para trackear `view_product` y `select_variant` usar el componente `ProductTracker` (ver `umami-analytics--ref--eventos-por-plan`).
+- El `MOCK_PRODUCTS` de esta página debe ser una copia exacta del `MOCK_PRODUCTS` en `catalogo/page.tsx`. Mantenerlos sincronizados.

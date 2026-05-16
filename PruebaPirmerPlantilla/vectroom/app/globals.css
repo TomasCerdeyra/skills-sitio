@@ -1,0 +1,68 @@
+@import "tailwindcss";
+
+@theme {
+  /* ====== VECTROOM — Paleta Revolut-inspired achromática ====== */
+
+  /* Colores de marca */
+  --color-brand-primary: #191c1f;
+  --color-brand-secondary: #000000;
+  --color-brand-accent: #f4f4f4;
+
+  /* Neutros propios (achromáticos, no Tailwind gray) */
+  --color-neutral-50: #fafafa;
+  --color-neutral-100: #f4f4f4;
+  --color-neutral-200: #ebebf0;
+  --color-neutral-300: #c9c9cd;
+  --color-neutral-400: #8d969e;
+  --color-neutral-500: #6b7280;
+  --color-neutral-600: #505a63;
+  --color-neutral-700: #374151;
+  --color-neutral-800: #1f2937;
+  --color-neutral-900: #191c1f;
+
+  /* Fuentes */
+  --font-display: var(--font-barlow-condensed), ui-sans-serif, system-ui, sans-serif;
+  --font-body: var(--font-outfit), ui-sans-serif, system-ui, sans-serif;
+}
+
+/* Reset body */
+body {
+  background: #ffffff;
+  color: #191c1f;
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ====== Keyframes ====== */
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes breathe {
+  0%, 100% { letter-spacing: -0.04em; }
+  50% { letter-spacing: 0.01em; }
+}
+
+/* ====== Utilidades ====== */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+.animate-marquee {
+  animation: marquee 20s linear infinite;
+}
+
+.animate-breathe {
+  animation: breathe 3s ease-in-out infinite;
+}

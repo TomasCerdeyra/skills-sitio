@@ -87,7 +87,7 @@ export async function POST(request: NextRequest) {
       .from("orders")
       .insert({
         tenant_id: tenantId,
-        status: "created",
+        status: "pending",
         total,
         currency: "ARS",
         payment_provider: "mercadopago",

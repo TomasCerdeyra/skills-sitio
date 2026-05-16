@@ -1,0 +1,57 @@
+@import "tailwindcss";
+
+@theme {
+  /* ===== Colores de marca — Estudio Méndez ===== */
+  --color-brand-primary: #0E1420;
+  --color-brand-accent: #B5893A;
+  --color-brand-accent-light: #D4A85A;
+
+  /* ===== Neutros cálidos propios ===== */
+  --color-neutral-50:  #F8F7F4;
+  --color-neutral-100: #EDEBE5;
+  --color-neutral-200: #D8D3C9;
+  --color-neutral-300: #BCB6A8;
+  --color-neutral-400: #9A9285;
+  --color-neutral-500: #7A7166;
+  --color-neutral-600: #605850;
+  --color-neutral-700: #463F38;
+  --color-neutral-800: #2C2720;
+  --color-neutral-900: #0E1420;
+
+  /* ===== Tipografía ===== */
+  /* Las vars --font-playfair-display / --font-onest las inyecta next/font en el <html> */
+  --font-display: var(--font-playfair-display), "Georgia", serif;
+  --font-body: var(--font-onest), "system-ui", sans-serif;
+}
+
+/* Reset base */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: #F8F7F4;
+  color: #0E1420;
+  font-family: var(--font-body), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Scrollbar hide utility */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Marquee animation */
+@keyframes marquee {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-100%); }
+}

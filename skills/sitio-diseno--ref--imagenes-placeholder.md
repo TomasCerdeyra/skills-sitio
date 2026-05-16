@@ -1,219 +1,345 @@
-# Reference: Imágenes placeholder
+# Reference: Sistema de imágenes — LoremFlickr + Fallback
 
-**Sin imágenes la plantilla no se ve, no se vende.**
+**Sin imágenes relevantes al rubro, la plantilla no convence a nadie.**
 
-## Dimensiones por contexto de uso
+---
 
-Usar siempre el ancho correcto para evitar pixelación en pantallas grandes y no enviar bytes innecesarios.
+## El sistema correcto: LoremFlickr
 
-| Contexto | URL param | `quality` en Next.js Image |
-|---|---|---|
-| **Hero / fondo full-viewport** | `?w=2400&q=90&auto=format&fit=crop` | `quality={90}` |
-| **Sección decorativa (ancho parcial, ~50vw)** | `?w=1200&q=85&auto=format&fit=crop` | `quality={85}` |
-| **Imagen "Nosotros" (columna 1/2)** | `?w=1200&q=85&auto=format&fit=crop` | `quality={85}` |
-| **Product card** | `?w=800&q=80&auto=format&fit=crop` | `quality={80}` (default) |
-| **Thumbnail / avatar** | `?w=400&q=80&auto=format&fit=crop` | `quality={80}` |
+**LoremFlickr** (`loremflickr.com`) es el servicio de imágenes de demo para SitioHoy.
 
-**Regla:** cualquier imagen que ocupe más del 60% del ancho de pantalla en desktop usa `w=2400`. Imágenes menores a la mitad de pantalla usan `w=1200`.
+**Por qué LoremFlickr y no picsum ni Unsplash:**
 
-```tsx
-{/* Hero — fondo full viewport */}
-<Image
-  src="https://images.unsplash.com/photo-1470338745628-171cf53de3a8?auto=format&fit=crop&w=2400&q=90"
-  alt="Interior del local"
-  fill
-  priority
-  quality={90}
-  className="object-cover"
-  sizes="100vw"
-/>
+| Servicio | Problema |
+|---|---|
+| `picsum.photos` | Imágenes completamente aleatorias. Un guitar puede mostrar una montaña. |
+| `images.unsplash.com` | Requiere IDs específicos verificados. Sin un ID conocido, no se puede usar. |
+| `source.unsplash.com` | **Deprecado** desde 2023. Da 503. |
+| `loremflickr.com` | ✅ Busca por keyword en Flickr. Siempre imágenes del rubro. Sin API key. |
 
-{/* Sección "Nosotros" — columna de 50% */}
-<Image
-  src="https://images.unsplash.com/photo-1525268323446-0505b6fe7778?auto=format&fit=crop&w=1200&q=85"
-  alt="Bartender en el local"
-  fill
-  quality={85}
-  className="object-cover"
-  sizes="(max-width: 1024px) 100vw, 50vw"
-/>
+### Formato de URL
 
-{/* Product card */}
-<Image
-  src="https://images.unsplash.com/photo-1608270586620-248524c67de9?auto=format&fit=crop&w=800&q=80"
-  alt="IPA Artesanal"
-  fill
-  className="object-cover"
-  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-/>
+```
+https://loremflickr.com/{width}/{height}/{keyword1,keyword2}?lock={n}
+```
+
+- **keyword**: en inglés. `guitar`, `piano,keyboard`, `drums`, `violin`, etc.
+- **lock**: número entero. Mismo `lock` + mismos keywords = siempre la misma foto. Determinístico.
+- **Sin lock**: imagen aleatoria en cada request (no usar en producción).
+
+### Ejemplos
+
+```
+https://loremflickr.com/800/600/guitar,acoustic?lock=1   → guitarra acústica (siempre la misma)
+https://loremflickr.com/800/600/piano,keyboard?lock=2   → piano/teclado
+https://loremflickr.com/800/600/drums,percussion?lock=4 → batería
+https://loremflickr.com/800/600/violin?lock=5           → violín
+https://loremflickr.com/800/600/coffee,espresso?lock=3  → café espresso
+https://loremflickr.com/800/600/burger,hamburger?lock=1 → hamburguesa
+https://loremflickr.com/2400/1200/guitar,music?lock=1   → hero full-width de música
 ```
 
 ---
 
-## ⚠️ Importante: `source.unsplash.com` está deprecado
+## Keywords por rubro (usar en mock data y secciones)
 
-`https://source.unsplash.com/featured/{w}x{h}/?{keywords}` fue eliminado por Unsplash en marzo 2023. **NO usar** — devuelve la página de Unsplash, no una imagen.
+| Rubro | Keyword recomendado |
+|---|---|
+| Guitarras acústicas/criollas | `guitar,acoustic` |
+| Guitarras eléctricas | `electric,guitar` |
+| Pianos digitales | `piano,keyboard` |
+| Sintetizadores / teclados | `synthesizer,keyboard` |
+| Bajos eléctricos | `bass,guitar` |
+| Baterías acústicas | `drums,percussion` |
+| Baterías electrónicas | `electronic,drums` |
+| Violín | `violin` |
+| Trompeta | `trumpet` |
+| Saxofón | `saxophone` |
+| Accesorios de guitarra | `guitar,accessories` |
+| Café / Cafetería | `coffee,espresso` |
+| Hamburguesería | `burger,hamburger` |
+| Panadería | `bread,bakery` |
+| Pastelería | `cake,pastry` |
+| Heladería | `ice,cream` |
+| Restaurante genérico | `restaurant,food` |
+| Skincare / Cosmética | `skincare,cosmetics` |
+| Ropa / Indumentaria | `fashion,clothing` |
+| Calzado | `shoes,sneakers` |
+| Joyería | `jewelry,ring` |
+| Estudio profesional | `office,business` |
+| Librería | `book,library` |
+| Bicicletas / deporte | `bicycle,sport` |
+| Mascota | `pet,dog` |
+| Tecnología / gadgets | `technology,gadget` |
+
+> **Para keywords no listados:** ir a [loremflickr.com](https://loremflickr.com) y probar el keyword en la URL. Si devuelve fotos relevantes, usarlo.
 
 ---
 
-## Opción A — Unsplash CDN (fotos reales, por rubro) ✅ Recomendada
+## ⚠️ OBLIGATORIO: Crear `lib/placeholder-images.ts`
 
-URL directa a una foto específica de Unsplash. No cambian nunca.
+```typescript
+// lib/placeholder-images.ts
 
-```
-https://images.unsplash.com/photo-{photo_id}?w={ancho}&q=80&auto=format&fit=crop
-```
+/**
+ * Mapeo rubro/nombre → keywords en inglés para LoremFlickr.
+ * Las búsquedas en Flickr funcionan mejor en inglés.
+ */
+const RUBRO_KEYWORDS: Record<string, string> = {
+  instrumentos: "guitar,music",
+  guitarra: "guitar,acoustic",
+  "guitarra-electrica": "electric,guitar",
+  "guitarra-acustica": "acoustic,guitar",
+  piano: "piano,keyboard",
+  teclado: "synthesizer,keyboard",
+  bajo: "bass,guitar",
+  bateria: "drums,percussion",
+  "bateria-electronica": "electronic,drums",
+  violin: "violin",
+  trompeta: "trumpet",
+  saxofon: "saxophone",
+  accesorios: "guitar,accessories",
+  cafe: "coffee,espresso",
+  cafeteria: "coffee,cafe",
+  hamburguesa: "burger,hamburger",
+  pizza: "pizza",
+  restaurant: "restaurant,food",
+  panaderia: "bread,bakery",
+  pasteleria: "cake,pastry",
+  heladeria: "ice,cream",
+  ropa: "fashion,clothing",
+  indumentaria: "fashion,shirt",
+  skincare: "skincare,cosmetics",
+  cosmetica: "cosmetics,beauty",
+  joyeria: "jewelry,ring",
+  libro: "book,library",
+  bicicleta: "bicycle,cycling",
+  deporte: "sport,fitness",
+  mascota: "pet,dog",
+  tech: "technology,gadget",
+  muebles: "furniture,interior",
+};
 
-### Fotos curadas por rubro
+/**
+ * Deriva keywords LoremFlickr de un nombre/rubro (acepta español).
+ */
+function deriveKeyword(nameOrRubro: string): string {
+  const clean = nameOrRubro
+    .toLowerCase()
+    .replace(/[áàäâ]/g, "a").replace(/[éèëê]/g, "e")
+    .replace(/[íìïî]/g, "i").replace(/[óòöô]/g, "o")
+    .replace(/[úùüû]/g, "u").replace(/ñ/g, "n")
+    .replace(/[^a-z0-9\s-]/g, "").trim();
 
-#### Café / Bar / Restaurante
+  if (RUBRO_KEYWORDS[clean]) return RUBRO_KEYWORDS[clean];
 
-| Uso | Photo ID |
-|---|---|
-| Hero / interior del local | `1554118811-1e0d58224f24` |
-| Café americano en taza | `1509042239860-f550ce710b93` |
-| Espresso / cortado | `1485808191679-5f86510bd9d4` |
-| Capuchino con foam art | `1572442388796-11668a67e53d` |
-| Latte art / barista | `1461023058943-07fcbe16d735` |
-| Barista trabajando | `1453614512568-c4024d13c247` |
-| Croissant / medialuna | `1555507036-ab1f4038808a` |
-| Tostado / sandwich | `1528736235302-52922df5c122` |
-| Sandwich de miga | `1568901346375-23c9450c58cd` |
-| Cheesecake con frutos rojos | `1565958011703-44f9829ba187` |
-| Brownie / postre oscuro | `1606313564200-e75d5e30476c` |
-| Copa de vino tinto | `1510812431401-41d2bd2722f3` |
-| Cerveza artesanal | `1535958636474-b021ee887b13` |
-| Café exterior / terraza | `1442512435-cd787031a5e5` |
+  const firstWord = clean.split(/\s+/)[0];
+  if (RUBRO_KEYWORDS[firstWord]) return RUBRO_KEYWORDS[firstWord];
 
-Uso en código:
-```tsx
-{/* Cliente: reemplazar con foto propia */}
-<img
-  src="https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=1200&q=80&auto=format&fit=crop"
-  alt="Interior del local"
-  className="w-full h-full object-cover"
-/>
-```
+  for (const [key, val] of Object.entries(RUBRO_KEYWORDS)) {
+    if (clean.includes(key)) return val;
+  }
 
-#### Skincare / Cosmética
+  // Fallback: primeras 2 palabras del nombre
+  return clean.split(/\s+/).filter((w) => w.length >= 3).slice(0, 2).join(",") || "product";
+}
 
-| Uso | Photo ID |
-|---|---|
-| Hero / flatlay productos | `1576426479480-5e0f10b2a4b1` |
-| Serum / gotero | `1620916566398-39f1143ab7be` |
-| Crema en frasco | `1608248543803-ba4f8c70ae0b` |
-| Producto natural / botánico | `1535591611502-103d06012b48` |
-| Modelo / lifestyle | `1596462502278-27bfdc403348` |
+/**
+ * Lock determinístico: mismo string → siempre el mismo número → misma foto.
+ */
+function deterministicLock(seed: string): number {
+  let hash = 0;
+  for (const ch of seed) hash = (hash * 31 + ch.charCodeAt(0)) & 0xffff;
+  return (hash % 50) + 1;
+}
 
-#### Ropa / Indumentaria
+/**
+ * Genera URL LoremFlickr con keyword del rubro.
+ * @param keyword  Palabra clave (inglés) o nombre/rubro en español (se mapea automáticamente)
+ * @param width    Ancho de la imagen
+ * @param height   Alto de la imagen
+ * @param lock     Número de lock. Default: derivado del keyword (determinístico).
+ */
+export function getFlickrImage(keyword: string, width = 800, height = 600, lock?: number): string {
+  const kw = deriveKeyword(keyword);
+  const lockNum = lock ?? deterministicLock(keyword);
+  return `https://loremflickr.com/${width}/${height}/${kw}?lock=${lockNum}`;
+}
 
-| Uso | Photo ID |
-|---|---|
-| Hero / modelo | `1558769132-cb1aea153895` |
-| Remera básica | `1591195853828-11db59a44f43` |
-| Jeans / pantalón | `1576995853123-5a10305d93c0` |
-| Rack de ropa / showroom | `1558618666-fcd25c85cd64` |
-| Detalle de tela / texture | `1582552938357-32b906df40cb` |
-
-#### Estudio profesional / Servicios
-
-| Uso | Photo ID |
-|---|---|
-| Hero / oficina minimal | `1497366216548-37526070297c` |
-| Reunión / team | `1600880292203-757bb62b4baf` |
-| Laptop / documentos | `1454165804606-c3d57bc86b40` |
-
-#### Panadería / Pastelería
-
-| Uso | Photo ID |
-|---|---|
-| Hero / escaparate | `1558303729-b51f9cf25d12` |
-| Pan recién horneado | `1509440159596-0249088772ff` |
-| Croissants en bandeja | `1555507036-ab1f4038808a` |
-| Torta / cake | `1565958011703-44f9829ba187` |
-
-#### Joyería
-
-| Uso | Photo ID |
-|---|---|
-| Hero / flatlay joyas | `1515562141207-7a88fb7ce338` |
-| Anillo plata | `1535632066927-ab7c9ab60908` |
-| Collar minimal | `1573408301185-9521e7572d8f` |
-
----
-
-## Opción B — Picsum Photos (fallback universal) ✅
-
-Fotos de alta calidad, siempre disponibles, determinísticas por seed. No requiere cuenta ni API key. La foto es la misma para el mismo seed.
-
-```
-https://picsum.photos/seed/{seed}/{ancho}/{alto}
-```
-
-```tsx
-{/* Cliente: reemplazar con foto propia */}
-<img
-  src="https://picsum.photos/seed/hero-cafe/1600/900"
-  alt="Hero"
-  className="w-full h-full object-cover"
-/>
-```
-
-Ventaja: siempre funciona, nunca da 404.
-Desventaja: la foto no es temática (es aleatoria pero de alta calidad).
-
-Usar picsum cuando no hay foto de Unsplash adecuada, o para mockear secciones decorativas sin foto específica.
-
----
-
-## Marcar imágenes en código
-
-Toda imagen placeholder lleva comentario para el cliente:
-
-```tsx
-{/* Cliente: reemplazar con foto propia */}
-<img
-  src="https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=1200&q=80&auto=format&fit=crop"
-  alt="Ambiente del local"
-  className="w-full h-full object-cover"
-/>
-```
-
----
-
-## Fallback en ProductCard cuando no hay imagen en Supabase
-
-```tsx
-function getProductImageSrc(product: { name: string; product_images: { url: string }[] }) {
+/**
+ * Resuelve la imagen de un producto:
+ * 1. Imagen real de la DB → usa esa
+ * 2. Fallback → LoremFlickr con keyword del nombre del producto
+ */
+export function getProductImage(
+  product: { name: string; product_images?: { url: string; alt?: string | null }[] },
+  width = 800,
+  height = 600
+): string {
   if (product.product_images?.[0]?.url) {
     return product.product_images[0].url;
   }
-  // Fallback determinístico por nombre de producto
-  const seed = product.name.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
-  return `https://picsum.photos/seed/${seed}/600/600`;
+  return getFlickrImage(product.name, width, height);
+}
+
+/**
+ * Genera imagen para secciones decorativas (hero, nosotros, etc.)
+ * @param keyword  Rubro o descripción del contexto
+ * @param lock     Optional: forzar lock específico para más control visual
+ */
+export function getSectionImage(keyword: string, width = 1200, height = 800, lock?: number): string {
+  return getFlickrImage(keyword, width, height, lock);
+}
+
+/**
+ * Genera imagen de producto para mock data según el rubro.
+ * Cada índice produce una imagen diferente del mismo rubro.
+ *
+ * @example
+ * product_images: [{ url: getProductImageByRubro("instrumentos", 0), alt: "...", position: 0 }]
+ */
+export function getProductImageByRubro(rubro: string, index: number, width = 800, height = 600): string {
+  const kw = deriveKeyword(rubro);
+  return `https://loremflickr.com/${width}/${height}/${kw}?lock=${(index % 20) + 1}`;
+}
+
+/** @deprecated Usar getFlickrImage() */
+export function getPlaceholderImage(seed: string, width = 800, height = 600): string {
+  return getFlickrImage(seed, width, height);
 }
 ```
 
 ---
 
-## Patrón en seed-data.sql — Siempre usar `images.unsplash.com`
+## Patrón de mock data CORRECTO
 
-```sql
-INSERT INTO public.product_images (id, tenant_id, product_id, url, alt, position) VALUES
-  ('...', '...', '...', 'https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=800&q=80&auto=format&fit=crop', 'Café americano', 0);
+### ✅ Opción A — URLs explícitas por producto (más control)
+
+```tsx
+const MOCK_PRODUCTS = [
+  {
+    id: "mock-1",
+    name: "Guitarra Criolla Clásica",
+    slug: "guitarra-criolla-clasica",
+    price: 185000,
+    // ...
+    product_images: [
+      {
+        url: "https://loremflickr.com/800/600/guitar,acoustic?lock=1",
+        alt: "Guitarra criolla clásica",
+        position: 0,
+      },
+    ],
+  },
+  {
+    id: "mock-2",
+    name: "Piano Digital Stage 88",
+    slug: "piano-digital-stage-88",
+    price: 890000,
+    product_images: [
+      {
+        url: "https://loremflickr.com/800/600/piano,keyboard?lock=2",
+        alt: "Piano digital Stage 88",
+        position: 0,
+      },
+    ],
+  },
+  // ... cada producto con su keyword de instrumento
+];
 ```
 
-**Nunca usar `source.unsplash.com`** en el SQL — esas URLs ya no funcionan.
+### ✅ Opción B — Usando getProductImageByRubro() (más rápido de escribir)
+
+```tsx
+import { getProductImageByRubro } from "@/lib/placeholder-images";
+
+const MOCK_PRODUCTS_BASE = [
+  { id: "mock-1", name: "Guitarra Criolla", slug: "guitarra-criolla", price: 185000, ... },
+  { id: "mock-2", name: "Piano Digital", slug: "piano-digital", price: 890000, ... },
+];
+
+// Agregar imágenes del rubro
+const MOCK_PRODUCTS = MOCK_PRODUCTS_BASE.map((p, i) => ({
+  ...p,
+  product_images: [{ url: getProductImageByRubro("instrumentos", i), alt: p.name, position: 0 }],
+}));
+```
+
+### ❌ MAL — product_images vacío
+
+```tsx
+product_images: [], // ← fallback a getProductImage(product) que usa el nombre en español → puede no mapear bien
+```
+
+---
+
+## Imágenes para secciones decorativas (Hero, Nosotros, etc.)
+
+```tsx
+import { getSectionImage } from "@/lib/placeholder-images";
+
+// Hero full-width de tienda de música
+<img
+  src={getSectionImage("guitar,music", 2400, 1200, 1)}
+  alt="Tienda de instrumentos"
+  className="w-full h-full object-cover"
+/>
+
+// Sección Nosotros (~50vw)
+<img
+  src={getSectionImage("music,store", 1200, 800, 2)}
+  alt="Local de Play Music"
+  className="w-full h-full object-cover"
+/>
+
+// Hero de cafetería
+<img
+  src={getSectionImage("coffee,cafe", 2400, 1200, 1)}
+  alt="Interior cafetería"
+  className="w-full h-full object-cover"
+/>
+```
+
+---
+
+## Configurar `next.config.ts`
+
+LoremFlickr redirige a imágenes en `live.staticflickr.com`. Si se usa `<Image>` de Next.js (no recomendado para demos), agregar los dominios:
+
+```typescript
+// next.config.ts
+const nextConfig: NextConfig = {
+  images: {
+    remotePatterns: [
+      { protocol: "https", hostname: "images.unsplash.com" },
+      { protocol: "https", hostname: "loremflickr.com" },
+      { protocol: "https", hostname: "live.staticflickr.com" },
+      { protocol: "https", hostname: "*.staticflickr.com" },
+    ],
+  },
+};
+```
+
+> **Recomendación:** para imágenes de producto en demos, usar siempre `<img>` nativo (no `<Image>` de Next.js). No hay beneficio de optimización con imágenes de terceros y evita configurar remotePatterns.
+
+---
+
+## Dimensiones por contexto
+
+| Contexto | URL |
+|---|---|
+| Hero full-viewport | `https://loremflickr.com/2400/1200/{keyword}?lock={n}` |
+| Sección decorativa (~50vw) | `https://loremflickr.com/1200/800/{keyword}?lock={n}` |
+| Product card / bento | `https://loremflickr.com/800/600/{keyword}?lock={n}` |
+| Thumbnail (carrito, resumen) | `https://loremflickr.com/400/400/{keyword}?lock={n}` |
 
 ---
 
 ## Validación
 
-- [ ] CERO URLs con `source.unsplash.com` — deprecado desde marzo 2023.
-- [ ] Todas las imágenes usan `images.unsplash.com/photo-{id}` o `picsum.photos/seed/`.
-- [ ] Cada `<img>` tiene comentario `{/* Cliente: reemplazar con foto propia */}`.
-- [ ] `alt` descriptivo en cada imagen.
-- [ ] `object-cover` + `aspect-ratio` fijo para evitar distorsión.
-- [ ] Hero tiene imagen de fondo o lateral.
-- [ ] Sección "Nosotros" tiene al menos 1 imagen.
-- [ ] Si hay sección de "destacados" en home, las cards tienen imagen.
+- [ ] `lib/placeholder-images.ts` creado con `getProductImage()`, `getSectionImage()`, `getProductImageByRubro()`.
+- [ ] **MOCK_PRODUCTS tienen `product_images` con URLs LoremFlickr del rubro** (keyword relevante + lock fijo).
+- [ ] Todas las cards usan `getProductImage()`.
+- [ ] Hero y sección Nosotros tienen imagen LoremFlickr del rubro.
+- [ ] `next.config.ts` tiene `loremflickr.com` y `*.staticflickr.com` en remotePatterns.
+- [ ] Todas las imágenes con `object-cover` y `aspect-ratio` fijo.

@@ -1,0 +1,115 @@
+@import "tailwindcss";
+
+@theme {
+  /* =============================================
+     Play Music — Sistema de colores
+  ============================================= */
+
+  /* Colores de marca */
+  --color-brand-primary: #C17B3E;       /* Ámbar madera — guitarra acústica */
+  --color-brand-secondary: #2A3A2A;     /* Verde musgo — fieltro de estuche */
+  --color-brand-accent: #F5D78E;        /* Dorado suave — cuerda al sol */
+  --color-brand-dark: #1A1208;          /* Negro cálido — cuerpo oscuro */
+
+  /* Neutros cálidos propios */
+  --color-neutral-50:  #FAF8F3;
+  --color-neutral-100: #F2ECDF;
+  --color-neutral-200: #E0D4BD;
+  --color-neutral-300: #C8B99A;
+  --color-neutral-400: #A89278;
+  --color-neutral-500: #856D55;
+  --color-neutral-600: #6B5540;
+  --color-neutral-700: #4A3F2F;
+  --color-neutral-800: #2E2517;
+  --color-neutral-900: #1A1208;
+
+  /* Fuentes — variables inyectadas por next/font en el <html> */
+  --font-display: var(--font-playfair), "Georgia", serif;
+  --font-body: var(--font-figtree), "system-ui", sans-serif;
+}
+
+/* =============================================
+   Base styles
+============================================= */
+body {
+  background-color: #FAF8F3;
+  color: #1A1208;
+  font-family: var(--font-figtree), "system-ui", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* =============================================
+   Pentagrama musical decorativo
+   Usado como fondo en secciones hero
+============================================= */
+.staff-bg {
+  position: relative;
+}
+.staff-bg::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(transparent calc(20% - 0.5px), rgba(193, 123, 62, 0.12) calc(20% - 0.5px), rgba(193, 123, 62, 0.12) calc(20% + 0.5px), transparent calc(20% + 0.5px)),
+    linear-gradient(transparent calc(35% - 0.5px), rgba(193, 123, 62, 0.12) calc(35% - 0.5px), rgba(193, 123, 62, 0.12) calc(35% + 0.5px), transparent calc(35% + 0.5px)),
+    linear-gradient(transparent calc(50% - 0.5px), rgba(193, 123, 62, 0.12) calc(50% - 0.5px), rgba(193, 123, 62, 0.12) calc(50% + 0.5px), transparent calc(50% + 0.5px)),
+    linear-gradient(transparent calc(65% - 0.5px), rgba(193, 123, 62, 0.12) calc(65% - 0.5px), rgba(193, 123, 62, 0.12) calc(65% + 0.5px), transparent calc(65% + 0.5px)),
+    linear-gradient(transparent calc(80% - 0.5px), rgba(193, 123, 62, 0.12) calc(80% - 0.5px), rgba(193, 123, 62, 0.12) calc(80% + 0.5px), transparent calc(80% + 0.5px));
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* =============================================
+   Animaciones custom
+============================================= */
+@keyframes float-note {
+  0%, 100% { transform: translateY(0px) rotate(-5deg); opacity: 0.06; }
+  50% { transform: translateY(-18px) rotate(5deg); opacity: 0.12; }
+}
+
+@keyframes fade-up-in {
+  from { opacity: 0; transform: translateY(28px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slide-in-left {
+  from { opacity: 0; transform: translateX(-32px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+@keyframes bar-grow {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+
+@keyframes counter-spin {
+  0% { transform: translateY(100%); opacity: 0; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+
+/* Scroll-driven reveal (progressive enhancement) */
+@keyframes reveal-on-scroll {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-float-note { animation: float-note 6s ease-in-out infinite; }
+.animate-float-note-delay { animation: float-note 8s ease-in-out infinite 2s; }
+.animate-float-note-delay2 { animation: float-note 7s ease-in-out infinite 4s; }
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Selection color */
+::selection {
+  background-color: #C17B3E;
+  color: #FAF8F3;
+}

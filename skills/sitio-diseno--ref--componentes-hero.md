@@ -1,6 +1,8 @@
-# Reference: Componentes Hero
+# Reference: Componentes Hero — Referencia Técnica
 
 El Hero es lo primero que ve el visitante. **Tiene que comunicar quién es el negocio y qué se puede hacer en 3 segundos.**
+
+**Este archivo es REFERENCIA TÉCNICA** — muestra cómo implementar heroes en Next.js con Framer Motion. NO son templates para copiar literalmente. Usá los patrones técnicos (client component, stagger, etc.) pero diseñá el hero como quieras. Consultá `sitio-diseno--ref--inspiracion-diseno.md` para ideas.
 
 ---
 
@@ -53,6 +55,12 @@ export default async function HomePage() {
 ```
 
 **Siempre:** crear `components/ui/HeroSection.tsx` con `"use client"` y el stagger de Framer Motion. Importarlo desde la page.
+
+---
+
+## Ejemplos de hero por tipo (referencia, no obligatorio)
+
+Abajo hay varios estilos de hero implementados. **Son ejemplos para inspirarte**, no opciones de un menú. Podés mezclar conceptos, modificarlos, o crear algo completamente nuevo. Lo importante es que el hero comunique la propuesta del negocio en 3 segundos.
 
 ---
 
@@ -300,6 +308,255 @@ export function HeroImageGrid({
   );
 }
 ```
+
+---
+
+### Hero "Inmersivo" — Fullscreen con overlay
+
+Para rubros donde el ambiente ES el producto. Imagen de fondo con overlay oscuro, texto centrado, sensación cinematográfica.
+
+```tsx
+"use client";
+
+import { motion } from "framer-motion";
+import Link from "next/link";
+
+export function HeroImmersive({
+  heading,
+  subheading,
+  primaryCta,
+  secondaryCta,
+  imageSrc,
+  imageAlt,
+}: {
+  heading: string;
+  subheading: string;
+  primaryCta: { text: string; href: string };
+  secondaryCta?: { text: string; href: string };
+  imageSrc: string;
+  imageAlt: string;
+}) {
+  return (
+    <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
+      {/* Background image */}
+      <motion.img
+        initial={{ scale: 1.15 }}
+        animate={{ scale: 1 }}
+        transition={{ duration: 1.8, ease: [0.25, 0.1, 0.25, 1] }}
+        src={imageSrc}
+        alt={imageAlt}
+        className="absolute inset-0 w-full h-full object-cover"
+      />
+      {/* Overlay gradient */}
+      <div className="absolute inset-0 bg-gradient-to-t from-neutral-900/80 via-neutral-900/40 to-neutral-900/30" />
+
+      <div className="relative z-10 max-w-4xl mx-auto px-6 text-center">
+        <motion.h1
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.9, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
+          className="font-display text-5xl sm:text-7xl lg:text-8xl font-bold text-white leading-[1.05] tracking-tight mb-6"
+        >
+          {heading}
+        </motion.h1>
+        <motion.p
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, delay: 0.5 }}
+          className="font-body text-lg sm:text-xl text-white/85 max-w-2xl mx-auto mb-10 leading-relaxed"
+        >
+          {subheading}
+        </motion.p>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, delay: 0.7 }}
+          className="flex flex-col sm:flex-row gap-4 justify-center"
+        >
+          <Link
+            href={primaryCta.href}
+            className="inline-flex items-center justify-center gap-2 bg-white text-neutral-900 px-10 py-4 font-medium hover:bg-brand-primary hover:text-white transition-colors duration-300"
+          >
+            {primaryCta.text}
+          </Link>
+          {secondaryCta && (
+            <Link
+              href={secondaryCta.href}
+              className="inline-flex items-center justify-center gap-2 border border-white/40 text-white px-10 py-4 font-medium hover:bg-white/10 transition-colors"
+            >
+              {secondaryCta.text}
+            </Link>
+          )}
+        </motion.div>
+      </div>
+
+      {/* Scroll indicator */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 1.5, duration: 0.8 }}
+        className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2"
+      >
+        <span className="font-body text-xs uppercase tracking-[0.3em] text-white/50">Scroll</span>
+        <div className="w-px h-10 bg-gradient-to-b from-white/50 to-transparent" />
+      </motion.div>
+    </section>
+  );
+}
+```
+
+---
+
+### Hero "Minimal tipográfico" — Solo texto, sin imagen
+
+Para marcas premium donde la tipografía ES la identidad. Fondo limpio, heading serif enorme, máximo whitespace. Impacto por sustracción.
+
+```tsx
+"use client";
+
+import { motion } from "framer-motion";
+import Link from "next/link";
+
+export function HeroMinimalText({
+  eyebrow,
+  heading,
+  subheading,
+  ctaText,
+  ctaHref,
+}: {
+  eyebrow?: string;
+  heading: string;
+  subheading: string;
+  ctaText: string;
+  ctaHref: string;
+}) {
+  return (
+    <section className="min-h-[85vh] flex items-center bg-neutral-50">
+      <div className="max-w-5xl mx-auto px-6 py-24 lg:py-32">
+        {eyebrow && (
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.8 }}
+            className="font-body text-xs uppercase tracking-[0.3em] text-brand-primary mb-8"
+          >
+            {eyebrow}
+          </motion.p>
+        )}
+        <motion.h1
+          initial={{ opacity: 0, y: 40 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 1, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
+          className="font-display text-6xl sm:text-8xl lg:text-[10rem] font-bold text-neutral-900 leading-[0.9] tracking-tighter mb-12"
+        >
+          {heading}
+        </motion.h1>
+        <div className="max-w-xl">
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, delay: 0.3 }}
+            className="font-body text-xl text-neutral-600 leading-relaxed mb-10"
+          >
+            {subheading}
+          </motion.p>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, delay: 0.5 }}
+          >
+            <Link
+              href={ctaHref}
+              className="inline-flex items-center gap-3 font-body text-neutral-900 font-medium group"
+            >
+              {ctaText}
+              <span className="w-12 h-px bg-neutral-900 group-hover:w-20 transition-all duration-300" />
+            </Link>
+          </motion.div>
+        </div>
+      </div>
+    </section>
+  );
+}
+```
+
+---
+
+### Hero "Video ambiental" — Video/Parallax de fondo
+
+Similar al Immersive pero con video loop. Para experiencias gastronómicas, hoteles, bares premium. El movimiento del video genera sensación de vida.
+
+```tsx
+"use client";
+
+import { motion } from "framer-motion";
+import Link from "next/link";
+
+export function HeroVideoAmbient({
+  heading,
+  subheading,
+  primaryCta,
+  videoSrc,
+  posterSrc,
+}: {
+  heading: string;
+  subheading: string;
+  primaryCta: { text: string; href: string };
+  videoSrc: string;
+  posterSrc: string;
+}) {
+  return (
+    <section className="relative min-h-screen flex items-end overflow-hidden">
+      {/* Video background */}
+      <video
+        autoPlay
+        muted
+        loop
+        playsInline
+        poster={posterSrc}
+        className="absolute inset-0 w-full h-full object-cover"
+      >
+        <source src={videoSrc} type="video/mp4" />
+      </video>
+      <div className="absolute inset-0 bg-gradient-to-t from-neutral-900/90 via-neutral-900/30 to-transparent" />
+
+      <div className="relative z-10 max-w-6xl mx-auto px-6 pb-20 lg:pb-28 w-full">
+        <motion.p
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.3 }}
+          className="font-body text-sm uppercase tracking-[0.2em] text-white/60 mb-4"
+        >
+          {subheading}
+        </motion.p>
+        <motion.h1
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.9, delay: 0.4, ease: [0.16, 1, 0.3, 1] }}
+          className="font-display text-5xl sm:text-7xl lg:text-8xl font-bold text-white leading-[0.95] tracking-tight mb-10 max-w-4xl"
+        >
+          {heading}
+        </motion.h1>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, delay: 0.6 }}
+        >
+          <Link
+            href={primaryCta.href}
+            className="inline-flex items-center gap-3 bg-white/10 backdrop-blur-sm border border-white/20 text-white px-8 py-4 font-medium hover:bg-white hover:text-neutral-900 transition-all duration-300"
+          >
+            {primaryCta.text}
+            <span className="transition-transform group-hover:translate-x-1">→</span>
+          </Link>
+        </motion.div>
+      </div>
+    </section>
+  );
+}
+```
+
+> **Nota sobre video:** si no hay video disponible, usar la misma imagen del Immersive con un efecto CSS de parallax (`background-attachment: fixed` o `transform: translateZ`) para simular movimiento.
 
 ---
 

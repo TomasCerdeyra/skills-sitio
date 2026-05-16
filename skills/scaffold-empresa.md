@@ -69,10 +69,11 @@ npm install mercadopago @mercadopago/sdk-react
 
 | Ref a leer | Path destino |
 |---|---|
+| `scaffold-emprendimiento--ref--cart-context.md` | `context/CartContext.tsx` ⚠️ **PRIMERO** |
 | `scaffold-empresa--ref--catalogo-page.md` | `app/(public)/catalogo/page.tsx` |
 | `scaffold-emprendimiento--ref--producto-page.md` | `app/(public)/producto/[slug]/page.tsx` |
 
-> El `producto-page` se reusa de Emprendimiento — la query es idéntica.
+> ⚠️ **CartContext primero**: igual que Emprendimiento, `carrito/page.tsx` y el Header usan `useCart()`. Crear el context antes de generar componentes que lo consumen. Envolver `{children}` con `<CartProvider>` en `app/layout.tsx`.
 
 #### Cupones (igual que Emprendimiento)
 
@@ -100,58 +101,40 @@ NO crear `app/api/shipping/calculate/route.ts`. NO usar `envia_access_token`.
 
 ### 4. Invocar skills de configuración
 
-#### 4.1 — `supabase-connection` ✅
+#### 4.1 — `rls-on-demand` ✅ (PRIMERO — crea el tenant)
 
-**Si Rama A:**
-```sql
-INSERT INTO public.tenants (
-  id, name, slug, plan, status, max_products,
-  envia_access_token, origin_name, origin_phone,
-  origin_address, origin_city, origin_postal_code, origin_state
-)
-VALUES (
-  '{tenant_id}', '{nombre}', '{slug}', 'empresa', 'active', NULL,
-  '{envia_token}', '{origin_name}', '{origin_phone}',
-  '{origin_address}', '{origin_city}', '{origin_postal_code}', '{origin_state}'
-);
+Plan: `empresa`. El script `setup-rls.sql` ahora:
+1. **Crea el tenant** con `INSERT INTO tenants` y genera UUID automático
+2. **Imprime el UUID** con `RAISE NOTICE` para que el usuario lo copie
+3. Habilita RLS en todas las tablas del plan
+4. Crea las políticas
 
-UPDATE public.tenants SET
-  mp_access_token = '...',
-  mp_public_key = '...',
-  resend_api_key = '...',
-  umami_url = 'https://cloud.umami.is/script.js'
-WHERE id = '{tenant_id}';
-```
+**Si Rama A (Envia):** el INSERT del tenant incluye las columnas `envia_access_token`, `origin_*`. Cargar refs:
+- `policies-products`
+- `policies-categories`
+- `policies-orders-coupons`
+- `policies-system`
 
-**Si Rama B:**
-```sql
-INSERT INTO public.tenants (id, name, slug, plan, status, max_products)
-VALUES ('{tenant_id}', '{nombre}', '{slug}', 'empresa', 'active', NULL);
+NO cargar `policies-shipping-zones` (no se usa la tabla).
 
-UPDATE public.tenants SET
-  mp_access_token = '...',
-  mp_public_key = '...',
-  resend_api_key = '...',
-  umami_url = 'https://cloud.umami.is/script.js'
-WHERE id = '{tenant_id}';
-```
+**Si Rama B (zonas fijas):** cargar refs:
+- `policies-products`
+- `policies-categories`
+- `policies-shipping-zones`
+- `policies-orders-coupons`
+- `policies-system`
 
-Y cargar zonas iniciales en `shipping_zones`:
-```sql
-INSERT INTO public.shipping_zones (tenant_id, name, description, price, position, active)
-VALUES
-  ('{tenant_id}', 'CABA', 'Capital Federal', 1500, 0, true),
-  ('{tenant_id}', 'GBA', 'Gran Buenos Aires', 2000, 1, true),
-  ('{tenant_id}', 'Interior', 'Resto del país', 3500, 2, true);
-```
+Generar `scripts/setup-rls.sql` completo.
 
-> **Nota:** este INSERT mínimo se reemplaza por uno más completo cuando el skill `sitio-diseno` genere `scripts/seed-data.sql`.
+> **Flujo del usuario:** corre `setup-rls.sql` → copia el UUID → lo pega en `.env.local` como `NEXT_PUBLIC_TENANT_ID` → lo pega en `seed-data.sql` (Ctrl+H `TODO_TENANT_ID`).
 
 #### 4.1.b — Seed data de prueba (skill `sitio-diseno--ref--seed-data-sql`)
 
 Las plantillas demo necesitan datos para que el catálogo, los filtros, las zonas y el checkout se vean reales. El skill `sitio-diseno` (etapa 5) genera `scripts/seed-data.sql` adaptado al rubro con: 8-12 productos, 3-5 categorías, imágenes Unsplash, variantes, **zonas de envío (solo Rama B)** y 2 cupones de prueba.
 
-> *"Después del INSERT del tenant, ejecutar en orden: setup-rls.sql, luego seed-data.sql. Ambos los genera este flujo."*
+El archivo usa `TODO_TENANT_ID` como placeholder — el usuario hace Ctrl+H y lo reemplaza con el UUID que imprimió `setup-rls.sql`.
+
+> *"Ejecutar en orden: setup-rls.sql (crea tenant + RLS), luego seed-data.sql (carga datos)."*
 
 **Importante en Rama A (Envia.com):** el seed NO incluye shipping_zones (no se usa la tabla). Sí incluye productos, categorías, variantes y cupones.
 
