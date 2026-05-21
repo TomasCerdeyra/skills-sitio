@@ -9,32 +9,40 @@ Detalle de producto. Trae imágenes ordenadas y variantes (display only). **El s
 > ⚠️ Envolver el fetch de Supabase en `try/catch` — si `NEXT_PUBLIC_TENANT_ID` no está definido durante el build estático, `getTenantId()` lanza una excepción que rompe la página.
 
 ```typescript
+import { unstable_cache } from "next/cache";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getTenantId } from "@/lib/tenant";
 import { notFound } from "next/navigation";
+import { TAGS } from "@/lib/cache-tags"; // creado por skill isr-on-demand
 
-async function getProduct(slug: string) {
-  try {
-    const tenantId = getTenantId();
-    const supabaseAdmin = createAdminClient();
+function getProduct(slug: string) {
+  return unstable_cache(
+    async () => {
+      try {
+        const tenantId = getTenantId();
+        const supabaseAdmin = createAdminClient();
 
-    const { data } = await supabaseAdmin
-      .from("products")
-      .select(`
-        id, name, slug, price, compare_at_price, description, featured,
-        category_id,
-        product_images (id, url, alt, position),
-        product_variants (id, name, sku, price, price_modifier, stock)
-      `)
-      .eq("tenant_id", tenantId)
-      .eq("slug", slug)
-      .eq("active", true)
-      .single();
+        const { data } = await supabaseAdmin
+          .from("products")
+          .select(`
+            id, name, slug, price, compare_at_price, description, featured,
+            category_id,
+            product_images (id, url, alt, position),
+            product_variants (id, name, sku, price, price_modifier, stock)
+          `)
+          .eq("tenant_id", tenantId)
+          .eq("slug", slug)
+          .eq("active", true)
+          .single();
 
-    return data;
-  } catch {
-    return null;
-  }
+        return data ?? null;
+      } catch {
+        return null;
+      }
+    },
+    [`product-${slug}`],
+    { tags: [TAGS.PRODUCTS, TAGS.PRODUCT(slug)] }
+  )();
 }
 
 export default async function ProductPage({

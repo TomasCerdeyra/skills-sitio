@@ -1,0 +1,34 @@
+@import "tailwindcss";
+
+@theme {
+  /* Paleta Lecrere — lujo moderno */
+  --color-brand-primary: #0E0E0E;
+  --color-brand-secondary: #B89A6A;
+  --color-brand-accent: #D4B896;
+
+  /* Neutros cálidos */
+  --color-neutral-50: #FAFAF8;
+  --color-neutral-100: #F0EDE7;
+  --color-neutral-300: #C4BAB0;
+  --color-neutral-600: #6B6058;
+  --color-neutral-900: #1A1714;
+
+  /* Tipografía */
+  --font-family-display: var(--font-display), Georgia, "Times New Roman", serif;
+  --font-family-body: var(--font-body), system-ui, sans-serif;
+}
+
+body {
+  background-color: #FAFAF8;
+  color: #1A1714;
+  font-family: var(--font-family-body);
+}
+
+/* Scrollbar oculta en filtros mobile */
+.scrollbar-hide::-webkit-scrollbar { display: none; }
+.scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-33.333%); }
+}

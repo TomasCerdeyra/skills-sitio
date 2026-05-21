@@ -7,46 +7,56 @@ Server Component que trae productos + categorías + variantes. **El skill `sitio
 Diferencia respecto a Esencial: incluye `product_variants` en el join (Emprendimiento permite agregar variantes al carrito).
 
 ```typescript
+import { unstable_cache } from "next/cache";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getTenantId } from "@/lib/tenant";
+import { TAGS } from "@/lib/cache-tags"; // creado por skill isr-on-demand
 
-async function getProducts() {
-  const tenantId = getTenantId();
-  const supabaseAdmin = createAdminClient();
+const getProducts = unstable_cache(
+  async () => {
+    const tenantId = getTenantId();
+    const supabaseAdmin = createAdminClient();
 
-  const { data } = await supabaseAdmin
-    .from("products")
-    .select(`
-      id, name, slug, price, compare_at_price, description, featured,
-      category_id,
-      product_images (id, url, alt, position),
-      product_variants (id, name, price, price_modifier, stock)
-    `)
-    .eq("tenant_id", tenantId)
-    .eq("active", true)
-    .order("featured", { ascending: false })
-    .order("created_at", { ascending: false })
-    .limit(200);
+    const { data } = await supabaseAdmin
+      .from("products")
+      .select(`
+        id, name, slug, price, compare_at_price, description, featured,
+        category_id,
+        product_images (id, url, alt, position),
+        product_variants (id, name, price, price_modifier, stock)
+      `)
+      .eq("tenant_id", tenantId)
+      .eq("active", true)
+      .order("featured", { ascending: false })
+      .order("created_at", { ascending: false })
+      .limit(200);
 
-  return data ?? [];
-}
+    return data ?? [];
+  },
+  ["catalog-products"],
+  { tags: [TAGS.PRODUCTS] }
+);
 
-async function getCategories() {
-  const tenantId = getTenantId();
-  const supabaseAdmin = createAdminClient();
+const getCategories = unstable_cache(
+  async () => {
+    const tenantId = getTenantId();
+    const supabaseAdmin = createAdminClient();
 
-  const { data } = await supabaseAdmin
-    .from("categories")
-    .select(`
-      id, name, slug, position,
-      subcategories (id, name, slug, position)
-    `)
-    .eq("tenant_id", tenantId)
-    .eq("active", true)
-    .order("position");
+    const { data } = await supabaseAdmin
+      .from("categories")
+      .select(`
+        id, name, slug, position,
+        subcategories (id, name, slug, position)
+      `)
+      .eq("tenant_id", tenantId)
+      .eq("active", true)
+      .order("position");
 
-  return data ?? [];
-}
+    return data ?? [];
+  },
+  ["catalog-categories"],
+  { tags: [TAGS.CATEGORIES] }
+);
 
 export default async function CatalogPage() {
   const [products, categories] = await Promise.all([

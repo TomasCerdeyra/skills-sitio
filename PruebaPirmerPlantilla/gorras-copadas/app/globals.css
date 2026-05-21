@@ -1,0 +1,70 @@
+@import "tailwindcss";
+
+@theme {
+  /* Fonts — variables injected by next/font into <html> */
+  --font-display: var(--font-archivo-black), "Impact", sans-serif;
+  --font-body: var(--font-onest), "system-ui", sans-serif;
+
+  /* Brand colors */
+  --color-acid: #D4FF00;
+  --color-dark: #0A0A0A;
+  --color-red: #FF3131;
+  --color-mid: #1A1A1A;
+  --color-muted: #2A2A2A;
+  --color-surface: #141414;
+  --color-border: #2E2E2E;
+  --color-text-primary: #F5F5F5;
+  --color-text-secondary: #A0A0A0;
+  --color-white: #FFFFFF;
+
+  /* Spacing extras */
+  --spacing-18: 4.5rem;
+
+  /* Border radius */
+  --radius-xl: 1rem;
+  --radius-2xl: 1.5rem;
+}
+
+/* Base */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: #0A0A0A;
+  color: #F5F5F5;
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Selection */
+::selection {
+  background-color: #D4FF00;
+  color: #0A0A0A;
+}
+
+/* Marquee */
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-33.333%); }
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #0A0A0A;
+}
+::-webkit-scrollbar-thumb {
+  background: #2E2E2E;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #D4FF00;
+}

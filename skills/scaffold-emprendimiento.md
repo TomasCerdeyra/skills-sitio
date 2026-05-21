@@ -16,8 +16,20 @@ Si no fueron provistos, preguntar:
 3. Tenant ID (UUID — generar si no tiene)
 4. Dominio final (ej: `milanbar.com.ar`)
 5. Número de WhatsApp del negocio
-6. ¿Carpeta vacía o monorepo? (default: carpeta vacía)
-7. ¿Credenciales listas? (Supabase, MercadoPago, Resend, Umami) — si no, placeholders
+6. **¿Usa Envia.com para los envíos? (Sí / No)** ← decisión clave
+   - **Si elige Envia.com (Sí)**, preguntar: *"¿Lo va a usar solo como zona de envíos (ej. solo Correo Argentino) o para usar otros métodos de envío aparte de Correo Argentino?"* (Anotar la respuesta para la configuración posterior).
+7. ¿Carpeta vacía o monorepo? (default: carpeta vacía)
+8. ¿Credenciales listas? (Supabase, MercadoPago, Resend, Umami) — si no, placeholders
+
+> **Pregunta 6 textual al usuario:**
+>
+> *"¿Va a usar Envia.com para calcular los envíos o va a configurar zonas fijas manuales?*
+> *  a) **Envia.com** — el sitio consulta tarifas a la API de Envia.*
+> *  b) **Zonas fijas (shipping_zones)** — el cliente define manualmente las zonas y precios.*
+>
+> *Si elige Envia.com, preguntar:* *"¿Lo va a usar solo como zona de envíos (ej. Correo Argentino) o para ofrecer múltiples métodos (Andreani, OCA, etc)?"*
+
+Según la respuesta se sigue **Rama A (Envia)** o **Rama B (zonas fijas)**.
 
 ---
 
@@ -29,15 +41,15 @@ Si no fueron provistos, preguntar:
 | DB / Auth | Supabase multi-tenant |
 | Storage | Supabase Storage |
 | Pagos | MercadoPago + cuotas |
-| Envíos | `shipping_zones` (zonas fijas, gestionadas desde admin panel) |
+| Envíos | Envia.com (Rama A) o `shipping_zones` (Rama B) |
 | Emails | Resend (confirmación pedidos + contacto) |
 | Analytics | Umami Cloud |
 
 ## Tablas Supabase usadas
 
-✅ Todas las base + `shipping_zones`, `orders`, `order_items`, `coupons`
-
-❌ NO usa: `tenants.envia_access_token` (eso es plan Empresa)
+✅ Todas las base + `orders`, `order_items`, `coupons`
+✅ Si Rama B: `shipping_zones`
+✅ Si Rama A: usa `tenants.envia_access_token` y `tenants.origin_*`
 
 ---
 
@@ -63,8 +75,19 @@ npm install mercadopago @mercadopago/sdk-react
 | `scaffold-emprendimiento--ref--catalogo-page.md` | `app/(public)/catalogo/page.tsx` |
 | `scaffold-emprendimiento--ref--producto-page.md` | `app/(public)/producto/[slug]/page.tsx` |
 | `scaffold-emprendimiento--ref--carrito-page.md` | `app/(public)/carrito/page.tsx` |
-| `scaffold-emprendimiento--ref--api-shipping-zones.md` | `app/api/shipping/zones/route.ts` |
 | `scaffold-emprendimiento--ref--api-coupons-validate.md` | `app/api/coupons/validate/route.ts` |
+
+**Envíos (según rama elegida)**
+
+**Si Rama A — Envia.com:**
+| Ref a leer | Path destino |
+|---|---|
+| `scaffold-empresa--ref--api-shipping-calculate-envia.md` | `app/api/shipping/calculate/route.ts` |
+
+**Si Rama B — Zonas fijas:**
+| Ref a leer | Path destino |
+|---|---|
+| `scaffold-emprendimiento--ref--api-shipping-zones.md` | `app/api/shipping/zones/route.ts` |
 
 > ⚠️ **CartContext primero**: `carrito/page.tsx` y `components/ui/Header.tsx` usan `useCart()` de `@/context/CartContext`. Sin este archivo el build falla. Crear `context/CartContext.tsx` ANTES que los componentes que lo consumen.
 >
@@ -77,7 +100,14 @@ Plan: `emprendimiento`. El script `setup-rls.sql` ahora:
 3. Habilita RLS en todas las tablas del plan
 4. Crea las políticas
 
-Cargar refs:
+**Si Rama A (Envia):** el INSERT del tenant incluye `envia_access_token`, `origin_*`. Cargar refs:
+- `policies-products`
+- `policies-categories`
+- `policies-orders-coupons`
+- `policies-system`
+(NO cargar `policies-shipping-zones`).
+
+**Si Rama B (zonas fijas):** cargar refs:
 - `policies-products`
 - `policies-categories`
 - `policies-shipping-zones`
@@ -89,7 +119,9 @@ Generar `scripts/setup-rls.sql` completo.
 > **Flujo del usuario:** corre `setup-rls.sql` → copia el UUID → lo pega en `.env.local` como `NEXT_PUBLIC_TENANT_ID` → lo pega en `seed-data.sql` (Ctrl+H `TODO_TENANT_ID`).
 
 #### 4.1.b — Seed data de prueba (skill `sitio-diseno--ref--seed-data-sql`)
-Las plantillas demo necesitan datos para que el catálogo, los filtros, las zonas y el checkout se vean reales. El skill `sitio-diseno` (etapa 5) genera `scripts/seed-data.sql` adaptado al rubro con: 8-12 productos, 3-5 categorías, imágenes Unsplash, variantes, zonas de envío y 2 cupones de prueba.
+Las plantillas demo necesitan datos para que el catálogo, los filtros, las zonas y el checkout se vean reales. El skill `sitio-diseno` (etapa 5) genera `scripts/seed-data.sql` adaptado al rubro con: 8-12 productos, 3-5 categorías, imágenes Unsplash, variantes, **zonas de envío (solo Rama B)** y 2 cupones de prueba.
+
+**Importante en Rama A:** el seed NO incluye `shipping_zones`.
 
 El archivo usa `TODO_TENANT_ID` como placeholder — el usuario hace Ctrl+H y lo reemplaza con el UUID que imprimió `setup-rls.sql`.
 
@@ -99,14 +131,22 @@ El archivo usa `TODO_TENANT_ID` como placeholder — el usuario hace Ctrl+H y lo
 Bucket `objects`. Si la instancia ya lo tiene, no recrear.
 
 #### 4.3 — `rls-on-demand` ✅
-Plan: `emprendimiento`. Cargar refs:
+Plan: `emprendimiento`.
+**Si Rama A (Envia):** cargar refs:
+- `policies-products`
+- `policies-categories`
+- `policies-orders-coupons`
+- `policies-system`
+(NO cargar `policies-shipping-zones`).
+
+**Si Rama B (zonas fijas):** cargar refs:
 - `policies-products`
 - `policies-categories`
 - `policies-shipping-zones`
 - `policies-orders-coupons`
 - `policies-system`
 
-Generar `scripts/setup-rls.sql` con todas + ALTER TABLE para todas las tablas del plan.
+Generar `scripts/setup-rls.sql` con todas + ALTER TABLE para las tablas correspondientes.
 
 #### 4.4 — `mercadopago-connection` ✅
 Generar:
@@ -121,6 +161,9 @@ Generar `lib/email/send.ts` y `lib/email/templates/payment.ts`. Estos los usan l
 #### 4.6 — `umami-analytics` ✅
 Plan: `emprendimiento`. Eventos: los de Esencial + `add_to_cart`, `select_variant`, `start_checkout`, `apply_coupon`, `select_shipping_zone`, `purchase`.
 
+#### 4.7 — `isr-on-demand` ✅
+Generar y configurar la revalidación on-demand (ISR) del caché leyendo el skill `isr-on-demand`. Asegurarse de crear los triggers SQL y el endpoint `/api/revalidate/route.ts`.
+
 ---
 
 ## Verificación
@@ -128,12 +171,13 @@ Plan: `emprendimiento`. Eventos: los de Esencial + `add_to_cart`, `select_varian
 - [ ] `context/CartContext.tsx` creado con `CartProvider` y `useCart()`
 - [ ] `<CartProvider>` envuelve `{children}` en `app/layout.tsx`
 - [ ] `proxy.ts` en raíz (NO `middleware.ts`)
-- [ ] `app/api/shipping/zones/route.ts` lee de `shipping_zones`
+- [ ] **Si Rama A:** `app/api/shipping/calculate/route.ts` funcional
+- [ ] **Si Rama B:** `app/api/shipping/zones/route.ts` funcional
 - [ ] `app/api/coupons/validate/route.ts` funcional
 - [ ] `app/api/contact/route.ts` funcional (de scaffold-base)
 - [ ] Flujo de checkout es: `/carrito` → `/checkout/datos` → `/checkout` (Payment Brick) → `/checkout/status`
 - [ ] Header/MobileMenu: botón "Pedido" (o carrito) enlaza a `/carrito`, NO directamente a `/checkout/datos`
-- [ ] `app/api/create-preference/route.ts` crea orden + order_items + popula columnas individuales (`shipping_carrier`, `shipping_service`, `shipping_cost`, `shipping_postal_code`, `coupon_code`, `discount_amount`)
+- [ ] `app/api/create-preference/route.ts` crea orden + order_items + popula columnas individuales (`shipping_carrier`, `shipping_service`, `shipping_cost`, `shipping_postal_code`, `coupon_code`, `discount_amount`) (en Rama A desde Envia, en Rama B desde zonas)
 - [ ] `app/api/process-payment/route.ts` actualiza orden e incrementa `coupons.uses_count`
 - [ ] `app/api/webhooks/mercadopago/route.ts` detecta transición a approved (no duplica)
 - [ ] `app/(public)/catalogo/page.tsx` query con `.limit(200)`
@@ -160,7 +204,7 @@ Stack configurado:
 - MercadoPago + cuotas con order_items + cupones ✓
 - Flujo checkout: /carrito → /checkout/datos → /checkout → /checkout/status ✓
 - Validación de cupones (/api/coupons/validate) ✓
-- Zonas de envío leídas de shipping_zones (/api/shipping/zones) ✓
+- Envíos: Envia.com (Rama A) o zonas fijas (Rama B) ✓
 - Confirmación de pedidos → Resend ✓
 - Formulario de contacto → Resend ✓
 - WhatsApp CTAs (número: {whatsapp}) ✓

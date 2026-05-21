@@ -16,15 +16,15 @@ Igual que Emprendimiento + **una pregunta clave**:
 3. Tenant ID (UUID — generar si no tiene)
 4. Dominio final
 5. Número de WhatsApp del negocio
-6. **¿Cómo gestiona los envíos? (Envia.com / zonas fijas)** ← decisión clave
+6. **¿Usa Envia.com para los envíos? (Sí / No)** ← decisión clave
 7. ¿Carpeta vacía o monorepo?
 8. ¿Credenciales listas?
 
 > **Pregunta 6 textual al usuario:**
 >
-> *"¿Cómo va a gestionar los envíos este cliente?*
-> *  a) **Envia.com** — el sitio consulta tarifas en tiempo real a la API de Envia y muestra opciones (OCA, Andreani, Correo Argentino) con sus precios reales.*
-> *  b) **Zonas fijas (shipping_zones)** — el cliente define manualmente las zonas y precios desde el admin panel, igual que en Emprendimiento."*
+> *"¿Va a usar Envia.com para calcular los envíos o va a configurar zonas fijas manuales?*
+> *  a) **Envia.com (Sí)** — el sitio consulta tarifas en tiempo real a la API de Envia y muestra opciones (OCA, Andreani, Correo Argentino) con sus precios reales.*
+> *  b) **Zonas fijas (No)** — el cliente define manualmente las zonas y precios desde el admin panel, igual que en Emprendimiento."*
 
 Según la respuesta se sigue **Rama A (Envia)** o **Rama B (zonas fijas)**.
 
@@ -177,6 +177,9 @@ Igual que Emprendimiento.
 Plan: `empresa`. Eventos: los de Emprendimiento + `checkout_step`, `conversion`, `checkout_abandoned`.
 
 Importante: el evento `conversion` se debe disparar desde el **webhook** de MercadoPago en la transición a approved, no desde `process-payment`.
+
+#### 4.7 — `isr-on-demand` ✅
+Generar y configurar la revalidación on-demand (ISR) del caché leyendo el skill `isr-on-demand`. Asegurarse de crear los triggers SQL y el endpoint `/api/revalidate/route.ts`.
 
 ---
 

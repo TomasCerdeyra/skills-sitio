@@ -4,15 +4,18 @@ Path destino: `app/(public)/producto/[slug]/page.tsx`
 
 Detalle de producto. La query es la misma que en Esencial — la diferencia está en la UI: Emprendimiento agrega lógica de "agregar al carrito" + selector de variantes con stock real.
 
-## ⚠️ Tres reglas críticas para no romper la demo
+## ⚠️ Cuatro reglas críticas para no romper la demo
 
-1. **`params` es una Promise en Next.js 15+.** Usar `await params` — NO `params.slug` directo.
-2. **`getProduct` con try/catch.** Si las credenciales de Supabase no están configuradas, la función debe devolver `null` sin lanzar. Jamás llamar a `getTenantId()` sin un try/catch exterior.
-3. **Mock data obligatorio.** La plantilla se muestra como demo con la DB vacía. Sin mock, cualquier click en un producto termina en 404. Los slugs del mock DEBEN coincidir exactamente con los slugs del `MOCK_PRODUCTS` del catálogo.
+1. **`params` es una Promise en Next.js 15+.** En Server Components usar `await params` — NO `params.slug` directo. En Client Components (`"use client"`) usar `use(params)` de React (import `use` from `"react"`) — los client components no pueden usar `await` al top level.
+2. **Si la pagina usa estado o eventos, es "use client"** y debe usar `use(params)`, no `await params`. Ejemplo: `const { slug } = use(params as Promise<{ slug: string }>);`
+3. **`getProduct` con try/catch.** Si las credenciales de Supabase no están configuradas, la función debe devolver `null` sin lanzar. Jamás llamar a `getTenantId()` sin un try/catch exterior.
+4. **Mock data obligatorio.** La plantilla se muestra como demo con la DB vacía. Sin mock, cualquier click en un producto termina en 404. Los slugs del mock DEBEN coincidir exactamente con los slugs del `MOCK_PRODUCTS` del catálogo.
 
 ```typescript
+import { unstable_cache } from "next/cache";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { notFound } from "next/navigation";
+import { TAGS } from "@/lib/cache-tags"; // creado por skill isr-on-demand
 import { ProductDetailClient } from "@/components/ui/ProductDetailClient";
 
 // ============================================================
@@ -34,30 +37,35 @@ const MOCK_PRODUCTS = [
   // product_variants necesita: id, name, sku (null), price, price_modifier, stock
 ];
 
-async function getProduct(slug: string) {
-  try {
-    // Verificar env var antes de usarla — no lanzar si no está definida
-    const tenantId = process.env.NEXT_PUBLIC_TENANT_ID;
-    if (!tenantId) return null;
+function getProduct(slug: string) {
+  return unstable_cache(
+    async () => {
+      try {
+        const tenantId = process.env.NEXT_PUBLIC_TENANT_ID;
+        if (!tenantId) return null;
 
-    const supabaseAdmin = createAdminClient();
-    const { data } = await supabaseAdmin
-      .from("products")
-      .select(`
-        id, name, slug, price, compare_at_price, description, featured,
-        category_id,
-        product_images (id, url, alt, position),
-        product_variants (id, name, sku, price, price_modifier, stock)
-      `)
-      .eq("tenant_id", tenantId)
-      .eq("slug", slug)
-      .eq("active", true)
-      .single();
+        const supabaseAdmin = createAdminClient();
+        const { data } = await supabaseAdmin
+          .from("products")
+          .select(`
+            id, name, slug, price, compare_at_price, description, featured,
+            category_id,
+            product_images (id, url, alt, position),
+            product_variants (id, name, sku, price, price_modifier, stock)
+          `)
+          .eq("tenant_id", tenantId)
+          .eq("slug", slug)
+          .eq("active", true)
+          .single();
 
-    return data ?? null;
-  } catch {
-    return null;
-  }
+        return data ?? null;
+      } catch {
+        return null;
+      }
+    },
+    [`product-${slug}`],
+    { tags: [TAGS.PRODUCTS, TAGS.PRODUCT(slug)] }
+  )();
 }
 
 export default async function ProductPage({

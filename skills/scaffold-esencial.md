@@ -92,6 +92,9 @@ Bucket `objects`. Si la instancia ya tiene el bucket, no recrear. Si es instanci
 #### 4.3 — `umami-analytics` ✅
 Plan: `esencial`. Eventos: `whatsapp_click`, `contact_form_submit`, `view_product`, `category_click`.
 
+#### 4.4 — `isr-on-demand` ✅
+Generar y configurar la revalidación on-demand (ISR) del caché leyendo el skill `isr-on-demand`. Asegurarse de crear los triggers SQL y el endpoint `/api/revalidate/route.ts`.
+
 ---
 
 ## Verificación
