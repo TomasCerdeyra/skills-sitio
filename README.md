@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🏗️ Scaffold Skills
+# 🏗️ One Shot Web Skills
 
 **Skills de Claude orquestados que generan sitios web completos, listos para vender**
 
