@@ -1,15 +1,15 @@
 ---
 name: scaffold-empresa
-description: Crea desde cero la estructura base de un sitio Next.js para un cliente del plan Empresa de SitioHoy ($65.000/mes). Extiende Emprendimiento con productos ilimitados y analítica avanzada de conversiones. Para envíos pregunta al inicio si se usa Envia.com (envíos automáticos en tiempo real) o zonas fijas (shipping_zones, igual que Emprendimiento) — son mutuamente excluyentes. El panel admin se conecta externamente. Al terminar queda listo para el skill de diseño. Usar cuando el usuario diga "crear sitio empresa", "scaffold cliente empresa", o similar.
+description: Crea desde cero la estructura base de un sitio Next.js para un cliente del plan Empresa de SitioHoy ($65.000/mes). Extiende Emprendimiento con productos ilimitados y analítica avanzada de conversiones. Para envíos pregunta al inicio si se usa Envia.com (envíos automáticos en tiempo real) o zonas fijas (shipping_zones, igual que Emprendimiento) — son mutuamente excluyentes. También pregunta si usa Correo Argentino directo (MiCorreo API) — por defecto sí. El panel admin se conecta externamente. Al terminar queda listo para el skill de diseño. Usar cuando el usuario diga "crear sitio empresa", "scaffold cliente empresa", o similar.
 ---
 
 # Skill: Scaffold — Plan Empresa
 
-Plan **Empresa** ($65.000/mes). `max_products = NULL` (ilimitado). Decisión clave al inicio: **Envia.com vs zonas fijas**.
+Plan **Empresa** ($65.000/mes). `max_products = NULL` (ilimitado). Decisiones clave al inicio: **Envia.com vs zonas fijas** + **¿Correo Argentino directo?**
 
 ## Inputs requeridos
 
-Igual que Emprendimiento + **una pregunta clave**:
+Igual que Emprendimiento + **dos preguntas clave**:
 
 1. Nombre del cliente
 2. Slug
@@ -17,8 +17,9 @@ Igual que Emprendimiento + **una pregunta clave**:
 4. Dominio final
 5. Número de WhatsApp del negocio
 6. **¿Usa Envia.com para los envíos? (Sí / No)** ← decisión clave
-7. ¿Carpeta vacía o monorepo?
-8. ¿Credenciales listas?
+7. **¿Usa Correo Argentino directo? (Sí / No, default: Sí)** ← integración MiCorreo API
+8. ¿Carpeta vacía o monorepo?
+9. ¿Credenciales listas?
 
 > **Pregunta 6 textual al usuario:**
 >
@@ -26,7 +27,14 @@ Igual que Emprendimiento + **una pregunta clave**:
 > *  a) **Envia.com (Sí)** — el sitio consulta tarifas en tiempo real a la API de Envia y muestra opciones (OCA, Andreani, Correo Argentino) con sus precios reales.*
 > *  b) **Zonas fijas (No)** — el cliente define manualmente las zonas y precios desde el admin panel, igual que en Emprendimiento."*
 
-Según la respuesta se sigue **Rama A (Envia)** o **Rama B (zonas fijas)**.
+> **Pregunta 7 textual al usuario (después de la 6):**
+>
+> *"¿Va a usar Correo Argentino directo (MiCorreo API) para cotizar y pre-registrar envíos? Por defecto este plan lo incluye.*
+> *  a) **Sí (default)** — se integra la API de MiCorreo para cotización en tiempo real, pre-registro automático de envíos post-pago y tracking. Requiere cuenta MiCorreo activa.*
+> *  b) **No** — no se integra Correo Argentino directo. Si usa Envia.com, Correo Argentino sigue disponible como carrier a través de Envia."*
+
+Según la respuesta a la pregunta 6 se sigue **Rama A (Envia)** o **Rama B (zonas fijas)**.
+La respuesta a la pregunta 7 determina si se activa el **módulo 4.8 (correo-argentino)**.
 
 ---
 
@@ -181,6 +189,18 @@ Importante: el evento `conversion` se debe disparar desde el **webhook** de Merc
 #### 4.7 — `isr-on-demand` ✅
 Generar y configurar la revalidación on-demand (ISR) del caché leyendo el skill `isr-on-demand`. Asegurarse de crear los triggers SQL y el endpoint `/api/revalidate/route.ts`.
 
+#### 4.8 — `correo-argentino` ✅ (según respuesta a pregunta 7 — default: Sí)
+
+**Si pregunta 7 = Sí (default):** leer el skill `correo-argentino` completo y generar:
+- `lib/correo-argentino/client.ts` (token, cotización, importación, tracking)
+- `lib/correo-argentino/provinces.ts` (códigos de provincia MiCorreo)
+- `app/actions/shipping-ca.ts` (server action de cotización)
+- Agregar columnas `correo_argentino_*` en `platform_config` (ver schema en el skill)
+- Agregar `correo_argentino_customer_id` y `origin_postal_code` en `tenants`
+- En el webhook de MercadoPago: agregar branch para importar envío a MiCorreo post-pago
+
+**Si pregunta 7 = No:** no generar nada de Correo Argentino. Si usa Envia.com, Correo Argentino sigue disponible como carrier a través de Envia.
+
 ---
 
 ## Verificación
@@ -192,6 +212,7 @@ Todo lo de Emprendimiento, más:
 - [ ] **Si Rama A:** `app/api/shipping/calculate/route.ts` usa `tenants.envia_access_token`. NO existe `app/api/shipping/zones/route.ts`. Tenant tiene `origin_*` completados.
 - [ ] **Si Rama B:** `app/api/shipping/zones/route.ts` lee de `shipping_zones`. NO existe `app/api/shipping/calculate/route.ts`. Tenant NO tiene `envia_access_token`.
 - [ ] `trackEvent("conversion", ...)` en el webhook de MercadoPago
+- [ ] **Si 4.8 activo (Correo Argentino):** `lib/correo-argentino/client.ts` y `provinces.ts` presentes. `platform_config` tiene columnas `correo_argentino_*`. Webhook de MercadoPago importa envío a MiCorreo cuando `shipping_carrier = 'correo-argentino'`.
 - [ ] `npm run build` sin errores
 
 ---

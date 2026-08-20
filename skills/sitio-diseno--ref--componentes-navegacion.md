@@ -400,6 +400,7 @@ export function MobileMenu({
 
 import Link from "next/link";
 import { buildWhatsAppLink } from "@/lib/whatsapp";
+import { SitioHoyBranding } from "./SitioHoyBranding";
 
 interface FooterProps {
   brandName: string;
@@ -455,11 +456,11 @@ export function Footer({ brandName, brandTagline }: FooterProps) {
           <p className="font-body text-sm text-neutral-50/60">
             © {year} {brandName}. Todos los derechos reservados.
           </p>
-          <p className="font-body text-sm text-neutral-50/40">
-            Sitio por <a href="https://sitiohoy.com.ar" className="hover:text-brand-primary transition-colors">SitioHoy</a>
-          </p>
         </div>
       </div>
+
+      {/* Branding SitioHoy — SIEMPRE al final (ver skill footer-branding-sitiohoy) */}
+      <SitioHoyBranding />
     </footer>
   );
 }
@@ -492,10 +493,13 @@ export function FooterStrip({ brandName }: { brandName: string }) {
             <Link href="/contacto" className="font-body text-sm text-neutral-600 hover:text-brand-primary transition-colors">Contacto</Link>
           </nav>
           <p className="font-body text-sm text-neutral-400">
-            © {year} · Sitio por <a href="https://sitiohoy.com.ar" className="hover:text-brand-primary transition-colors">SitioHoy</a>
+            © {year} {brandName}
           </p>
         </div>
       </div>
+
+      {/* Branding SitioHoy — SIEMPRE al final (ver skill footer-branding-sitiohoy) */}
+      <SitioHoyBranding />
     </footer>
   );
 }
@@ -557,10 +561,13 @@ export function FooterCTA({ brandName, ctaText, ctaHref }: {
             <Link href="/contacto" className="font-body text-sm text-neutral-50/70 hover:text-white transition-colors">Contacto</Link>
           </nav>
           <p className="font-body text-sm text-neutral-50/40">
-            © {year} · Sitio por <a href="https://sitiohoy.com.ar" className="hover:text-brand-primary transition-colors">SitioHoy</a>
+            © {year} {brandName}
           </p>
         </div>
       </div>
+
+      {/* Branding SitioHoy — SIEMPRE al final (ver skill footer-branding-sitiohoy) */}
+      <SitioHoyBranding />
     </footer>
   );
 }
@@ -618,7 +625,8 @@ export function WhatsAppFloat() {
 - [ ] Header con shrink animado al scroll.
 - [ ] Mobile menu funcional como drawer (click outside cierra).
 - [ ] WhatsApp Float visible en mobile sin tapar contenido importante.
-- [ ] Footer con info de contacto y crédito a SitioHoy.
+- [ ] Footer con info de contacto y `<SitioHoyBranding />` al final (ver skill `footer-branding-sitiohoy`).
 - [ ] Underlines animados en navegación desktop.
 - [ ] Cart button solo si `showCart={true}`.
 - [ ] Aria labels en botones sin texto.
+- [ ] FAQ section presente en la Home (ver skill `seccion-faq`).

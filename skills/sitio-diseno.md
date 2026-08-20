@@ -120,6 +120,10 @@ Cargar según necesidad:
 - `sitio-diseno--ref--responsive-mobile.md` → validar mobile
 - `sitio-diseno--ref--inspiracion-diseno.md` → galería de ideas por tipo de componente
 
+Cargar SIEMPRE (obligatorios en todas las plantillas):
+- `footer-branding-sitiohoy.md` → barra de marca SitioHoy al final del footer (logo pequeño + link)
+- `seccion-faq.md` → sección de Preguntas Frecuentes en la Home (diseño libre, contenido adaptado al rubro)
+
 > **IMPORTANTE:** los refs de componentes son REFERENCIA TÉCNICA (cómo conectar con Supabase, cómo estructurar un client component, etc.), NO son templates a copiar literalmente. Usá los patrones técnicos pero diseñá la UI como quieras.
 
 **Contenido que debe estar en la HOME (organizar libremente):**
@@ -128,7 +132,9 @@ Cargar según necesidad:
 - Los productos/platos más importantes visibles rápido
 - Información práctica del negocio (horarios, ubicación, contacto) — puede estar integrada en cualquier sección
 - Una razón para confiar (historia, proceso, valores, diferencial)
+- **Sección de Preguntas Frecuentes** — leer skill `seccion-faq.md`. Diseño libre, contenido adaptado al rubro. NUNCA repetir el mismo layout entre plantillas.
 - Un cierre que invite a actuar (pedir, reservar, contactar)
+- **Branding SitioHoy en el footer** — leer skill `footer-branding-sitiohoy.md`. Componente `<SitioHoyBranding />` como última franja del footer. Logo en `#10b981`, 20px.
 
 **Decisiones LIBRES — innovar en cada plantilla:**
 
@@ -277,6 +283,8 @@ Cargar `plantilla-qa.md` y ejecutar el QA completo.
 - [ ] Contacto con form + datos verosímiles + WhatsApp.
 - [ ] Checkout completo (si aplica al plan).
 - [ ] WhatsAppFloat visible en mobile sin tapar contenido.
+- [ ] **`<FAQSection />`** presente en la Home con mínimo 5 preguntas del rubro. Diseño diferente a otras plantillas.
+- [ ] **`<SitioHoyBranding />`** presente al final del footer. Logo 20px en `#10b981` (o fallback si fondo verde). Link a sitiohoy.com.ar.
 
 ### Animaciones (obligatorias)
 - [ ] Hero con entrada animada (stagger o reveal).
