@@ -141,14 +141,22 @@ flowchart TD
 | `supabase-connection` | Integración | Conexión y esquema de Supabase |
 | `supabase-storage` | Integración | Subida/gestión de imágenes de producto |
 | `resend-email` | Integración | Emails transaccionales (contacto, confirmación de pago) |
-| `mercadopago-connection` | Integración | Pagos — solo Emprendimiento y Empresa |
+| `mercadopago-connection` | Integración | Pagos — por defecto en Emprendimiento y Empresa |
 | `rls-on-demand` | Integración | Políticas Row Level Security de Supabase por plan |
 | `isr-on-demand` | Integración | Revalidación de caché on-demand multitenant |
 | `umami-analytics` | Integración | Analytics, eventos diferenciados por plan |
-| `correo-argentino` | Integración | Envíos vía MiCorreo — opcional, solo Empresa |
+| `correo-argentino` | Integración | Envíos vía MiCorreo — opcional, por defecto en Empresa |
 
 Debajo de los 16 skills maestros hay **61 archivos `--ref--`** con el contenido
 literal (código, SQL, copy) que cada uno copia al proyecto generado.
+
+> Los planes, precios y qué integración corresponde a cada uno reflejan la
+> configuración actual de esta librería, no una regla fija del sistema. Cada skill
+> maestro define en su propio texto qué plan lo activa (por ejemplo,
+> `mercadopago-connection` se invoca desde `scaffold-emprendimiento` y
+> `scaffold-empresa`) — alcanza con editar esa condición en el skill correspondiente
+> para adaptar precios, planes o qué integraciones van en cada uno a otro modelo de
+> negocio.
 
 ---
 
@@ -198,8 +206,8 @@ en este repo.
 - Node.js 18+ y npm
 - Una cuenta de [Supabase](https://supabase.com) (el proyecto generado es multi-tenant)
 - Una cuenta de [Resend](https://resend.com) (emails transaccionales)
-- Mercado Pago (solo planes Emprendimiento / Empresa)
-- Opcional: Umami Cloud (analytics), Envia.com o MiCorreo (envíos, solo Empresa)
+- Mercado Pago (por defecto en Emprendimiento / Empresa)
+- Opcional: Umami Cloud (analytics), Envia.com o MiCorreo (envíos, por defecto en Empresa)
 
 ### Opción A — Claude Code (recomendada)
 
